@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "build",
+        "program": "${workspaceFolder}/PlanningPoker.Server/bin/Debug/net8.0/PlanningPoker.Server.dll",
+        "args": [],
+        "cwd": "${workspaceFolder}/PlanningPoker.Server",
+        "stopAtEntry": false,
+        "serverReadyAction": {
+          "action": "openExternally",
+          "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+        },
+        "env": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        }
+      },
+      {
+        "name": "Attach Blazor",
+        "type": "blazorwasm",
+        "request": "attach",
+        "url": "https://localhost:7042/"
+      }
+    ],
+    "compounds": [
+      {
+        "name": "Debug All",
+        "configurations": ["Debug", "Attach Blazor"]
+      }
+    ]
+  }

@@ -1,20 +1,30 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using static PlanningPoker.Server.TestState;
+using StackExchange.Redis;
+using System.Text.Json;
 
 namespace PlanningPoker.Server;
 
-public class SessionHub : Hub<ISessionHubClient>, ISessionHub
+public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHub
 {
+    private async Task<Session?> GetSessionAsync(Guid sessionId) =>
+        await database.StringGetAsync(sessionId.ToString()) is RedisValue session
+        && session.HasValue
+        ? JsonSerializer.Deserialize<Session>((string)session!)
+        : null;
+
+    private async Task UpdateSessionAsync(Guid sessionId, Session session) =>
+        await database.StringSetAsync(sessionId.ToString(), JsonSerializer.Serialize(session));
+
     public async Task<Session> ConnectToSessionAsync(Guid sessionId)
     {
-        if (!Sessions.TryGetValue(sessionId, out Session? value))
+        if (!await database.KeyExistsAsync(sessionId.ToString()))
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
 
-        return value;
+        return await GetSessionAsync(sessionId) ?? throw new Exception($"Unable to read session {sessionId}.");
     }
 
     public async Task<Guid> CreateSessionAsync(string title)
@@ -27,14 +37,17 @@ public class SessionHub : Hub<ISessionHubClient>, ISessionHub
         }
 
         Guid newGuid;
+        bool insertResult;
+
+        var newSession = new Session(title, [], State.Hidden);
+        var newSessionJson = JsonSerializer.Serialize(newSession);
 
         do
         {
             newGuid = Guid.NewGuid();
+            insertResult = await database.StringSetAsync(newGuid.ToString(), newSessionJson, when: When.NotExists);
         }
-        while (Sessions.ContainsKey(newGuid));
-
-        Sessions.Add(newGuid, new(title, [], State.Hidden));
+        while (!insertResult);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, newGuid.ToString());
 
@@ -45,19 +58,19 @@ public class SessionHub : Hub<ISessionHubClient>, ISessionHub
     {
         name = name.Trim();
 
-        if (!Sessions.TryGetValue(sessionId, out Session? value))
+        if (await GetSessionAsync(sessionId) is not Session session)
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (value.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
+        if (session.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
         {
             throw new ArgumentException($"There is already a participant with the name '{name}' in this session.");
         }
 
-        Sessions[sessionId] = value with {
-            Participants = [.. value.Participants, new(name, "")]
-        };
+        await UpdateSessionAsync(sessionId, session with {
+            Participants = [.. session.Participants, new(name, "")]
+        });
 
         await Clients.Group(sessionId.ToString()).OnParticipantAdded(name);
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
@@ -69,26 +82,26 @@ public class SessionHub : Hub<ISessionHubClient>, ISessionHub
         
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.ToString());
 
-        if (!Sessions.TryGetValue(sessionId, out Session? value))
+        if (await GetSessionAsync(sessionId) is not Session session)
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (!value.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
+        if (!session.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
         {
             return;
         }
 
-        Sessions[sessionId] = value with {
+        await UpdateSessionAsync(sessionId, session with {
             Participants =
-                value.Participants
+                session.Participants
                 .Where(p => p.Name.ToUpperInvariant() != name.ToUpperInvariant())
                 .ToList()
-        };
+        });
 
-        if (value.Participants.Count() == 1)
+        if (session.Participants.Count() == 1)
         {
-            Sessions.Remove(sessionId);
+            await database.KeyDeleteAsync(sessionId.ToString());
         }
         else
         {
@@ -101,30 +114,30 @@ public class SessionHub : Hub<ISessionHubClient>, ISessionHub
         name = name.Trim();
         points = points.Trim();
 
-        if (!Sessions.TryGetValue(sessionId, out Session? value))
+        if (await GetSessionAsync(sessionId) is not Session session)
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (!value.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
+        if (!session.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
         {
             throw new ArgumentException($"There is no participant with the name '{name}' in this session.");
         }
 
-        Sessions[sessionId] = value with {
+        await UpdateSessionAsync(sessionId, session with {
             Participants =
-                value.Participants
+                session.Participants
                 .Select(p =>
                     p.Name.ToUpperInvariant() == name.ToUpperInvariant()
                         ? new(name, points)
                         : p
                 )
                 .ToList()
-        };
+        });
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(
             name,
-            value.State == State.Hidden && !string.IsNullOrEmpty(points)
+            session.State == State.Hidden && !string.IsNullOrEmpty(points)
                 ? "points"
                 : points
         );
@@ -132,22 +145,22 @@ public class SessionHub : Hub<ISessionHubClient>, ISessionHub
 
     public async Task UpdateSessionStateAsync(Guid sessionId, State state)
     {
-        if (!Sessions.TryGetValue(sessionId, out Session? value))
+        if (await GetSessionAsync(sessionId) is not Session session)
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (value.State == state)
+        if (session.State == state)
         {
             return;
         }
 
-        Sessions[sessionId] = value with {
+        await UpdateSessionAsync(sessionId, session with {
             State = state,
             Participants = state == State.Hidden
-                ? value.Participants.Select(p => new Participant(p.Name, "")).ToList()
-                : value.Participants
-        };
+                ? session.Participants.Select(p => new Participant(p.Name, "")).ToList()
+                : session.Participants
+        });
         
         if (state == State.Hidden)
         {
@@ -155,7 +168,7 @@ public class SessionHub : Hub<ISessionHubClient>, ISessionHub
         }
         else
         {
-            await Clients.Group(sessionId.ToString()).OnReveal(value.Participants);
+            await Clients.Group(sessionId.ToString()).OnReveal(session.Participants);
         }
     }
 
@@ -168,20 +181,15 @@ public class SessionHub : Hub<ISessionHubClient>, ISessionHub
             throw new ArgumentException($"There must be a title.");
         }
 
-        if (!Sessions.TryGetValue(sessionId, out Session? value))
+        if (await GetSessionAsync(sessionId) is not Session session)
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        Sessions[sessionId] = value with {
+        await UpdateSessionAsync(sessionId, session with {
             Title = title
-        };
+        });
         
         await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
     }
-}
-
-static class TestState
-{
-    public static Dictionary<Guid, Session> Sessions { get; set; } = [];
 }

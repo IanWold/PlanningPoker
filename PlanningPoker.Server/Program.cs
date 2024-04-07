@@ -1,6 +1,5 @@
-using System.Reflection;
-using PlanningPoker;
 using PlanningPoker.Server;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(
     new WebApplicationOptions
@@ -20,7 +19,17 @@ if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } p
     );
 }
 
-builder.Services.AddSignalR();
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis") ?? throw new Exception("Redis is required.");
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(await ConnectionMultiplexer.ConnectAsync(redisConnectionString));
+builder.Services.AddTransient(s => s.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
+
+builder.Services
+    .AddSignalR()
+    .AddStackExchangeRedis(
+        redisConnectionString,
+        options => options.Configuration.ChannelPrefix = RedisChannel.Literal("signalr_prod")
+    );
 
 builder.Services.AddRazorPages();
 

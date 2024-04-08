@@ -14,18 +14,12 @@ else
     @if (_state.Self is null)
     {
         <div class="overlay">
-            <div class="modal modal-md d-block">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-body">
-                            <div class="d-flex gap-2 w-100">
-                                <input type="text" class="form-control" id="participantName" placeholder="Enter your name to join the session" @bind-value=Name>
-                                <button class="btn btn-primary" @onclick="@(async () => await _state.JoinAsync(Name))">Join</button>
-                            </div>
-                        </div>
-                    </div>
+            <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
+                <div class="d-flex gap-2 w-100">
+                    <input type="text" class="form-control" id="participantName" placeholder="Enter your name to join the session" @bind-value=Name>
+                    <button class="btn btn-primary" @onclick="@(async () => await _state.JoinAsync(Name))">Join</button>
                 </div>
-            </div>
+            </div> </div> </div> </div>
         </div>
     }
 
@@ -34,25 +28,37 @@ else
         <div style="position: absolute; left: 142px; top: 0; z-index: 10; display: flex;">
             <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 477.8960003992721 73.10090279767292" width="477.8960003992721" height="73.10090279767292">
                 <!-- svg-source:excalidraw -->
-                
                 <defs>
                     <style class="style-fonts">
-                    @@font-face {
-                        font-family: "Virgil";
-                        src: url("https://excalidraw.com/Virgil.woff2");
-                    }
-                    @@font-face {
-                        font-family: "Cascadia";
-                        src: url("https://excalidraw.com/Cascadia.woff2");
-                    }
-                    @@font-face {
-                        font-family: "Assistant";
-                        src: url("https://excalidraw.com/Assistant-Regular.woff2");
-                    }
+                        @@font-face {
+                            font-family: "Virgil";
+                            src: url("https://excalidraw.com/Virgil.woff2");
+                        }
+                        @@font-face {
+                            font-family: "Cascadia";
+                            src: url("https://excalidraw.com/Cascadia.woff2");
+                        }
+                        @@font-face {
+                            font-family: "Assistant";
+                            src: url("https://excalidraw.com/Assistant-Regular.woff2");
+                        }
                     </style>
-                    
                 </defs>
-                <g transform="translate(130.15631534067836 38.100902797672916) rotate(0 168.86984252929688 12.5)"><text x="0" y="17.52" font-family="Virgil, Segoe UI Emoji" font-size="20px" fill="#1e1e1e" text-anchor="start" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">Copy this link for others to join</text></g><g stroke-linecap="round"><g transform="translate(117.15631534067836 51.100902797672916) rotate(0 -50 -20)"><path d="M0.27 -1.02 C-16.39 -0.8, -82.45 6.55, -99.28 0.19 C-116.11 -6.17, -100.74 -32.31, -100.72 -39.19 M-1.05 1.05 C-17.87 0.99, -83.65 5.2, -99.85 -1.83 C-116.04 -8.85, -98.43 -34.66, -98.2 -41.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(117.15631534067836 51.100902797672916) rotate(0 -50 -20)"><path d="M-97.99 -21.1 C-99.58 -27.08, -97.63 -36.66, -98.2 -41.1 M-97.99 -21.1 C-97.96 -29.45, -98.51 -36.76, -98.2 -41.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(117.15631534067836 51.100902797672916) rotate(0 -50 -20)"><path d="M-110.89 -25.64 C-107.9 -30.02, -101.31 -37.97, -98.2 -41.1 M-110.89 -25.64 C-106.08 -32.21, -101.89 -37.84, -98.2 -41.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g></g><mask></mask>
+                <g transform="translate(130.15631534067836 38.100902797672916) rotate(0 168.86984252929688 12.5)">
+                    <text x="0" y="17.52" font-family="Virgil, Segoe UI Emoji" font-size="20px" fill="#1e1e1e" text-anchor="start" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">Copy this link for others to join</text>
+                </g>
+                <g stroke-linecap="round">
+                    <g transform="translate(117.15631534067836 51.100902797672916) rotate(0 -50 -20)">
+                        <path d="M0.27 -1.02 C-16.39 -0.8, -82.45 6.55, -99.28 0.19 C-116.11 -6.17, -100.74 -32.31, -100.72 -39.19 M-1.05 1.05 C-17.87 0.99, -83.65 5.2, -99.85 -1.83 C-116.04 -8.85, -98.43 -34.66, -98.2 -41.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path>
+                    </g>
+                    <g transform="translate(117.15631534067836 51.100902797672916) rotate(0 -50 -20)">
+                        <path d="M-97.99 -21.1 C-99.58 -27.08, -97.63 -36.66, -98.2 -41.1 M-97.99 -21.1 C-97.96 -29.45, -98.51 -36.76, -98.2 -41.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path>
+                    </g>
+                    <g transform="translate(117.15631534067836 51.100902797672916) rotate(0 -50 -20)">
+                        <path d="M-110.89 -25.64 C-107.9 -30.02, -101.31 -37.97, -98.2 -41.1 M-110.89 -25.64 C-106.08 -32.21, -101.89 -37.84, -98.2 -41.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path>
+                    </g>
+                </g>
+                <mask></mask>
             </svg>
             <div>
                 <button class="btn-close" style="margin-top: 39px; margin-left: -20px;" @onclick=_state.HideShareNotification></button>
@@ -61,21 +67,17 @@ else
     }
 
     <div class="session" style="@(_state.Self is null ? "filter: blur(1px)" : "")">
-        <div style="grid-area: top-left">
-        </div>
-            <div class="card m-3 w-100 shadow-sm border-0" style="grid-area: header; max-width: 600px;">
-                <div class="card-body p-2">
-                    <div class="d-flex gap-2 justify-content-between">
-                        <div>
-                            <label>@_state.Session.Title</label>
-                        </div>
-                        <div>
-                            <label>@_state.Self?.Name</label>
-                        </div>
+        <div class="card m-3 w-100 shadow-sm border-0" style="grid-area: header; max-width: 600px;">
+            <div class="card-body p-2">
+                <div class="d-flex gap-2 justify-content-between">
+                    <div>
+                        <label>@_state.Session.Title</label>
+                    </div>
+                    <div>
+                        <label>@_state.Self?.Name</label>
                     </div>
                 </div>
             </div>
-        <div style="grid-area: top-right">
         </div>
 
         <div style="grid-area: main">
@@ -117,11 +119,8 @@ else
                     </div>
                 }
             </div>
-
         </div>
 
-        <div style="grid-area: bottom-left">
-        </div>
         <div class="card m-3 w-auto shadow-sm border-0" style="grid-area: footer; max-width: 600px;">
             <div class="card-body p-2">
                 <div class="d-flex gap-2 justify-content-between">
@@ -132,8 +131,6 @@ else
                     <button class="btn btn-square btn-outline-danger" @onclick="@(async () => await _state.UpdatePointsAsync(""))"><ion-icon name="close-outline"></ion-icon></button>
                 </div>
             </div>
-        </div>
-        <div style="grid-area: bottom-right">
         </div>
     </div>
 }

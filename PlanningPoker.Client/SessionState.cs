@@ -41,6 +41,8 @@ public class SessionState(NavigationManager navigationManager) : ISessionHubClie
         "?"
     ];
 
+    public bool ShowShareNotification { get; set; }
+
     private void NotifyUpdate()
     {
         if (!_isUpdateBelayed)
@@ -100,6 +102,7 @@ public class SessionState(NavigationManager navigationManager) : ISessionHubClie
         
         SessionId = await _server!.CreateSessionAsync(title);
         Session = new(title, [], State.Hidden);
+        ShowShareNotification = true;
 
         await JoinAsync(name);
 
@@ -108,6 +111,12 @@ public class SessionState(NavigationManager navigationManager) : ISessionHubClie
         NotifyUpdate();
 
         navigationManager.NavigateTo($"/session/{SessionId}");
+    }
+
+    public void HideShareNotification()
+    {
+        ShowShareNotification = false;
+        NotifyUpdate();
     }
 
     public async Task JoinAsync(string name)

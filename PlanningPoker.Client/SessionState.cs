@@ -10,33 +10,25 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     private ISessionHub? _server;
 
-    private string? _name;
+    private Guid? _sessionId;
+
+    private string? _participantId;
 
     private bool _isUpdateBelayed = false;
 
     public event EventHandler? OnStateChanged;
 
-    public Guid? SessionId { get; private set; }
-
     public Session? Session { get; private set; }
 
     public Participant? Self =>
-        _name is null
+        _participantId is null
         ? null
-        : Session?.Participants?.FirstOrDefault(p => p.Name.ToUpperInvariant() == _name.ToUpperInvariant());
+        : Session?.Participants?.FirstOrDefault(p => p.ParticipantId == _participantId);
 
     public IEnumerable<Participant> Others =>
-        Session?.Participants?.Where(p => p.Name.ToUpperInvariant() != _name?.ToUpperInvariant()) ?? [];
+        Session?.Participants?.Where(p => p.ParticipantId != _participantId) ?? [];
 
-    public readonly IEnumerable<string> Options = [
-        "0.5",
-        "1",
-        "2",
-        "3",
-        "5",
-        "8",
-        "?"
-    ];
+    public readonly IEnumerable<string> Options = [ "0.5", "1", "2", "3", "5", "8", "?" ];
 
     public bool ShowShareNotification { get; set; }
 
@@ -73,19 +65,19 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         await EnsureInitialized();
 
-        if (SessionId == sessionId)
+        if (_sessionId == sessionId)
         {
             _isUpdateBelayed = false;
             return;
         }
 
-        if (SessionId is not null)
+        if (_sessionId is not null)
         {
             await LeaveAsync();
         }
 
-        SessionId = sessionId;
-        Session = await _server!.ConnectToSessionAsync(SessionId!.Value);
+        _sessionId = sessionId;
+        Session = await _server!.ConnectToSessionAsync(_sessionId!.Value);
 
         _isUpdateBelayed = false;
         NotifyUpdate();
@@ -97,7 +89,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         await EnsureInitialized();
         
-        SessionId = await _server!.CreateSessionAsync(title);
+        _sessionId = await _server!.CreateSessionAsync(title);
         Session = new(title, [], State.Hidden);
         ShowShareNotification = true;
 
@@ -107,7 +99,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         NotifyUpdate();
 
-        navigationManager.NavigateTo($"/session/{SessionId}");
+        navigationManager.NavigateTo($"/session/{_sessionId}");
     }
 
     public void HideShareNotification()
@@ -119,9 +111,9 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task JoinAsync(string name)
     {
         await EnsureInitialized();
-        await _server!.JoinSessionAsync(SessionId!.Value, name);
+        var participantId = await _server!.JoinSessionAsync(_sessionId!.Value, name);
 
-        _name = name;
+        _participantId = participantId;
 
         NotifyUpdate();
     }
@@ -129,22 +121,22 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task HideAsync()
     {
         await EnsureInitialized();
-        await _server!.UpdateSessionStateAsync(SessionId!.Value, State.Hidden);
+        await _server!.UpdateSessionStateAsync(_sessionId!.Value, State.Hidden);
     }
 
     public async Task RevealAsync()
     {
         await EnsureInitialized();
-        await _server!.UpdateSessionStateAsync(SessionId!.Value, State.Revealed);
+        await _server!.UpdateSessionStateAsync(_sessionId!.Value, State.Revealed);
     }
 
     public async Task UpdatePointsAsync(string points)
     {
         await EnsureInitialized();
-        await _server!.UpdateParticipantPointsAsync(SessionId!.Value, _name!, points);
+        await _server!.UpdateParticipantPointsAsync(_sessionId!.Value, points);
 
         Session = Session! with {
-            Participants = [.. Session!.Participants.Where(p => p.Name != _name), Session!.Participants.Single(p => p.Name == _name) with { Points = points }]
+            Participants = [.. Session!.Participants.Where(p => p.ParticipantId != _participantId), Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Points = points }]
         };
 
         NotifyUpdate();
@@ -159,13 +151,13 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
 
         await EnsureInitialized();
-        await _server!.DisconnectFromSessionAsync(SessionId!.Value, _name!);
+        await _server!.DisconnectFromSessionAsync(_sessionId!.Value);
         await _connection!.StopAsync();
         await _connection!.DisposeAsync();
 
-        SessionId = null;
+        _sessionId = null;
         Session = null;
-        _name = null;
+        _participantId = null;
 
         _connection = null;
         _server = null;
@@ -176,7 +168,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task UpdateTitle(string title)
     {
         await EnsureInitialized();
-        await _server!.UpdateSessionTitleAsync(SessionId!.Value, title);
+        await _server!.UpdateSessionTitleAsync(_sessionId!.Value, title);
 
         Session = Session! with {
             Title = title
@@ -191,24 +183,24 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         Session = Session! with {
             State = State.Hidden,
-            Participants = Session!.Participants.Select(p => new Participant(p.Name, "")).ToList()
+            Participants = Session!.Participants.Select(p => p with { Points = "" }).ToList()
         };
 
         NotifyUpdate();
     }
 
-    public async Task OnParticipantAdded(string name)
+    public async Task OnParticipantAdded(string participantId, string name)
     {
         await EnsureInitialized();
 
         Session = Session! with {
-            Participants = [.. Session!.Participants, new(name, "")]
+            Participants = [.. Session!.Participants, new(participantId, name, "")]
         };
 
         NotifyUpdate();
     }
 
-    public async Task OnParticipantPointsUpdated(string name, string points)
+    public async Task OnParticipantPointsUpdated(string participantId, string points)
     {
         await EnsureInitialized();
 
@@ -216,8 +208,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             Participants =
                 Session!.Participants
                 .Select(p =>
-                    p.Name.ToUpperInvariant() == name.ToUpperInvariant()
-                        ? new(name, points)
+                    p.ParticipantId == participantId
+                        ? p with { Points = points }
                         : p
                 )
                 .ToList()
@@ -226,14 +218,14 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnParticipantRemoved(string name)
+    public async Task OnParticipantRemoved(string participantId)
     {
         await EnsureInitialized();
 
         Session = Session! with {
             Participants =
                 Session!.Participants
-                .Where(p => p.Name.ToUpperInvariant() != name.ToUpperInvariant())
+                .Where(p => p.ParticipantId != participantId)
                 .ToList()
         };
 

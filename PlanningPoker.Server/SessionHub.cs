@@ -54,7 +54,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         return newGuid;
     }
 
-    public async Task JoinSessionAsync(Guid sessionId, string name)
+    public async Task<string> JoinSessionAsync(Guid sessionId, string name)
     {
         name = name.Trim();
 
@@ -69,17 +69,17 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         }
 
         await UpdateSessionAsync(sessionId, session with {
-            Participants = [.. session.Participants, new(name, "")]
+            Participants = [.. session.Participants, new(Context.ConnectionId, name, "")]
         });
 
-        await Clients.Group(sessionId.ToString()).OnParticipantAdded(name);
+        await Clients.Group(sessionId.ToString()).OnParticipantAdded(Context.ConnectionId, name);
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
+
+        return Context.ConnectionId;
     }
 
-    public async Task DisconnectFromSessionAsync(Guid sessionId, string name)
+    public async Task DisconnectFromSessionAsync(Guid sessionId)
     {
-        name = name.Trim();
-        
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.ToString());
 
         if (await GetSessionAsync(sessionId) is not Session session)
@@ -87,7 +87,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (!session.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
+        if (!session.Participants.Any(p => p.ParticipantId == Context.ConnectionId))
         {
             return;
         }
@@ -95,7 +95,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         await UpdateSessionAsync(sessionId, session with {
             Participants =
                 session.Participants
-                .Where(p => p.Name.ToUpperInvariant() != name.ToUpperInvariant())
+                .Where(p => p.ParticipantId != Context.ConnectionId)
                 .ToList()
         });
 
@@ -105,13 +105,12 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         }
         else
         {
-            await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(name);
+            await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
         }
     }
 
-    public async Task UpdateParticipantPointsAsync(Guid sessionId, string name, string points)
+    public async Task UpdateParticipantPointsAsync(Guid sessionId, string points)
     {
-        name = name.Trim();
         points = points.Trim();
 
         if (await GetSessionAsync(sessionId) is not Session session)
@@ -119,24 +118,24 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (!session.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
+        if (!session.Participants.Any(p => p.ParticipantId == Context.ConnectionId))
         {
-            throw new ArgumentException($"There is no participant with the name '{name}' in this session.");
+            throw new ArgumentException($"There is no participant with id '{Context.ConnectionId}' in this session.");
         }
 
         await UpdateSessionAsync(sessionId, session with {
             Participants =
                 session.Participants
                 .Select(p =>
-                    p.Name.ToUpperInvariant() == name.ToUpperInvariant()
-                        ? new(name, points)
+                    p.ParticipantId == Context.ConnectionId
+                        ? p with { Points = points}
                         : p
                 )
                 .ToList()
         });
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(
-            name,
+            Context.ConnectionId,
             session.State == State.Hidden && !string.IsNullOrEmpty(points)
                 ? "points"
                 : points
@@ -158,7 +157,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         await UpdateSessionAsync(sessionId, session with {
             State = state,
             Participants = state == State.Hidden
-                ? session.Participants.Select(p => new Participant(p.Name, "")).ToList()
+                ? session.Participants.Select(p => p with { Points = "" }).ToList()
                 : session.Participants
         });
         

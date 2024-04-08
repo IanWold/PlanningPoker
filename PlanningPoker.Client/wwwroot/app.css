@@ -60,6 +60,10 @@
         content: var(--blazor-load-percentage-text, "Loading");
     }
 
+h1:focus {
+    outline: none;
+}
+
 input {
     box-shadow: none !important;
 }

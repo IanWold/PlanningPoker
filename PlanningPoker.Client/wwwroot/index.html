@@ -45,6 +45,13 @@
         //         document.documentElement.removeAttribute('data-bs-theme');
         //     }
         // });
+
+        function setupSignalRBeforeUnloadListener(dotNetHelper) {
+            window.addEventListener("beforeunload", async (event) => {
+                await dotNetHelper.invokeMethodAsync('LeaveAsync');
+                event.preventDefault();
+            });
+        }
     </script>
 </body>
 

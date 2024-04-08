@@ -1,21 +1,18 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
 
 namespace PlanningPoker.Client;
 
-public class SessionState(NavigationManager navigationManager) : ISessionHubClient
+public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : ISessionHubClient, IDisposable
 {
-#pragma warning disable IDE0044 // Add readonly modifier
     private HubConnection? _connection;
 
     private ISessionHub? _server;
 
     private string? _name;
 
-    private bool _isInitialized = false;
-
     private bool _isUpdateBelayed = false;
-#pragma warning restore IDE0044 // Add readonly modifier
 
     public event EventHandler? OnStateChanged;
 
@@ -31,7 +28,7 @@ public class SessionState(NavigationManager navigationManager) : ISessionHubClie
     public IEnumerable<Participant> Others =>
         Session?.Participants?.Where(p => p.Name.ToUpperInvariant() != _name?.ToUpperInvariant()) ?? [];
 
-    public IEnumerable<string> Options = [
+    public readonly IEnumerable<string> Options = [
         "0.5",
         "1",
         "2",
@@ -53,7 +50,7 @@ public class SessionState(NavigationManager navigationManager) : ISessionHubClie
 
     private async Task EnsureInitialized()
     {
-        if (_isInitialized)
+        if (_connection is not null)
         {
             return;
         }
@@ -65,9 +62,9 @@ public class SessionState(NavigationManager navigationManager) : ISessionHubClie
         _connection.ClientRegistration<ISessionHubClient>(this);
         _server = _connection.ServerProxy<ISessionHub>();
         
+        await jsRuntime.InvokeVoidAsync("setupSignalRBeforeUnloadListener", DotNetObjectReference.Create(this));
+        
         await _connection.StartAsync();
-
-        _isInitialized = true;
     }
 
     public async Task LoadAsync(Guid sessionId)
@@ -153,14 +150,25 @@ public class SessionState(NavigationManager navigationManager) : ISessionHubClie
         NotifyUpdate();
     }
 
+    [JSInvokable("LeaveAsync")]
     public async Task LeaveAsync()
     {
+        if (_connection is null)
+        {
+            return;
+        }
+
         await EnsureInitialized();
         await _server!.DisconnectFromSessionAsync(SessionId!.Value, _name!);
+        await _connection!.StopAsync();
+        await _connection!.DisposeAsync();
 
         SessionId = null;
         Session = null;
         _name = null;
+
+        _connection = null;
+        _server = null;
 
         NotifyUpdate();
     }
@@ -253,5 +261,10 @@ public class SessionState(NavigationManager navigationManager) : ISessionHubClie
         };
 
         NotifyUpdate();
+    }
+
+    void IDisposable.Dispose()
+    {
+        LeaveAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
 }

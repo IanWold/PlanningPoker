@@ -9,16 +9,26 @@
 {
     <span>Loading...</span>
 }
-else if (_state.Self is null)
-{
-    <div class="mb-3">
-        <label for="sessionTitle" class="form-label">Enter a name to join the session</label>
-        <input type="text" class="form-control" id="participantName" placeholder="Enter Your Name" @bind-value=Name>
-    </div>
-    <button class="btn btn-primary" @onclick="@(async () => await _state.JoinAsync(Name))">Join</button>
-}
 else
 {
+    @if (_state.Self is null)
+    {
+        <div class="overlay">
+            <div class="modal modal-md d-block">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            <div class="d-flex gap-2 w-100">
+                                <input type="text" class="form-control" id="participantName" placeholder="Enter your name to join the session" @bind-value=Name>
+                                <button class="btn btn-primary" @onclick="@(async () => await _state.JoinAsync(Name))">Join</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (_state.ShowShareNotification)
     {
         <div style="position: absolute; left: 142px; top: 0; z-index: 10; display: flex;">
@@ -50,7 +60,7 @@ else
         </div>
     }
 
-    <div class="session">
+    <div class="session" style="@(_state.Self is null ? "filter: blur(1px)" : "")">
         <div style="grid-area: top-left">
         </div>
             <div class="card m-3 w-100 shadow-sm" style="grid-area: header; max-width: 600px;">
@@ -60,7 +70,7 @@ else
                             <label>@_state.Session.Title</label>
                         </div>
                         <div>
-                            <label>@_state.Self.Name</label>
+                            <label>@_state.Self?.Name</label>
                         </div>
                     </div>
                 </div>
@@ -93,16 +103,19 @@ else
                     </div>
                 }
                 
-                <div class="stat" style="--i:@(_state.Session.Participants.Count())">
-                    <label>@_state.Self.Name</label>
+                @if (_state.Self is not null)
+                {
+                    <div class="stat" style="--i:@(_state.Session.Participants.Count())">
+                        <label>@_state.Self.Name</label>
 
-                    <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                        @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points))
-                        {
-                            <span>@_state.Self.Points</span>
-                        }
+                        <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
+                            @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points))
+                            {
+                                <span>@_state.Self.Points</span>
+                            }
+                        </div>
                     </div>
-                </div>
+                }
             </div>
 
         </div>
@@ -114,7 +127,7 @@ else
                 <div class="d-flex gap-2 justify-content-between">
                     @foreach (var option in _state.Options)
                     {
-                        <button class="btn btn-square @(_state.Self.Points == option ? "btn-primary" : "btn-outline-primary")" @onclick="@(async () => await _state.UpdatePointsAsync(option))">@option</button>
+                        <button class="btn btn-square @(_state.Self?.Points == option ? "btn-primary" : "btn-outline-primary")" @onclick="@(async () => await _state.UpdatePointsAsync(option))">@option</button>
                     }
                     <button class="btn btn-square btn-outline-danger" @onclick="@(async () => await _state.UpdatePointsAsync(""))"><ion-icon name="close-outline"></ion-icon></button>
                 </div>

@@ -1,4 +1,7 @@
-# FreePlanningPoker
+<div align="center">
+  <img src="https://raw.githubusercontent.com/IanWold/PlanningPoker/main/PlanningPoker.Client/wwwroot/img3.png" height="100">
+  <h1>FreePlanningPoker.io</h1>
+</div>
 
 This is Free Planning Poker, a free tool for software teams to do "planning poker" exercises to estimate the difficulty and length of development tasks. You can probably use it for other purposes if you need, too. It's always going to be free, without limits.
 

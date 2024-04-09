@@ -167,6 +167,9 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         if (state == State.Hidden)
         {
             await Clients.Group(sessionId.ToString()).OnHide();
+
+            var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
+            Parallel.ForEach(participantIds, i => database.HashSet($"{sessionId}:participants:{i}", [ new HashEntry(nameof(Participant.Points), "") ], flags: CommandFlags.FireAndForget));
         }
         else
         {

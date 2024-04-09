@@ -5,7 +5,7 @@ namespace PlanningPoker.Server;
 
 public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHub
 {
-    private async Task<Session> GetSessionNewAsync(Guid sessionId)
+    private async Task<Session> GetSessionAsync(Guid sessionId)
     {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
         var participantKeys = participantIds.Select(i => $"{sessionId}:participants:{i}");
@@ -59,7 +59,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
 
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
 
-        return await GetSessionNewAsync(sessionId) ?? throw new Exception($"Unable to read session {sessionId}.");
+        return await GetSessionAsync(sessionId) ?? throw new Exception($"Unable to read session {sessionId}.");
     }
 
     public async Task<Guid> CreateSessionAsync(string title)
@@ -182,7 +182,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         }
         else
         {
-            var session = await GetSessionNewAsync(sessionId);
+            var session = await GetSessionAsync(sessionId);
             await Clients.Group(sessionId.ToString()).OnReveal(session.Participants);
         }
     }

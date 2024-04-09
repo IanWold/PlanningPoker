@@ -6,56 +6,52 @@ namespace PlanningPoker.Server;
 
 public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHub
 {
-    private async Task<IEnumerable<Participant>> GetParticipantsAsync(Guid sessionId)
+    private async Task<Session?> GetSessionAsync(Guid sessionId)
     {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
+
+        var session = new Session("", [], State.Hidden);
         var participants = new ConcurrentBag<Participant>();
 
-        var readTasks = participantIds.Select(i => database.HashGetAllAsync($"{sessionId}:participants:{i}").ContinueWith(p =>
-            participants.Add(new Participant(
-                i!,
-                p.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
-                p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!
-            )))
-        )
-        .ToArray();
-
-        await Task.WhenAll(readTasks);
-
-        return participants.ToArray();
-    }
-
-    private async Task<Session> GetSessionAsync(Guid sessionId)
-    {
-        var session = new Session("", [], State.Hidden);
-        IEnumerable<Participant> participants = [];
-
         Task[] readTasks = [
-            database.HashGetAllAsync(sessionId.ToString()).ContinueWith(s => 
-                session = new Session(
-                    Title: s.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
-                    Participants: [],
-                    State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!)
-                )
+            database.HashGetAllAsync(sessionId.ToString()).ContinueWith(s =>
+                s.Result.Length > 0
+                    ? session = new Session(
+                        Title: s.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
+                        Participants: [],
+                        State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!)
+                    )
+                    : null
             ),
-            GetParticipantsAsync(sessionId).ContinueWith(p => participants = p.Result)
+            ..participantIds.Select(i => database.HashGetAllAsync($"{sessionId}:participants:{i}").ContinueWith(p =>
+                participants.Add(new Participant(
+                    i!,
+                    p.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
+                    p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!
+                )))
+            )
         ];
 
         await Task.WhenAll(readTasks);
 
-        return session! with { Participants = participants };
+        if (session is not null)
+        {
+            session = session with { Participants = participants.ToArray() };
+        }
+
+        return session;
     }
 
     public async Task<Session> ConnectToSessionAsync(Guid sessionId)
     {
-        if (!await database.KeyExistsAsync(sessionId.ToString()))
+        if (await GetSessionAsync(sessionId) is not Session session)
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
 
-        return await GetSessionAsync(sessionId) ?? throw new Exception($"Unable to read session {sessionId}.");
+        return session;
     }
 
     public async Task<Guid> CreateSessionAsync(string title)
@@ -140,38 +136,16 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
     {
         points = points.Trim();
 
-        if (await database.HashGetAsync(sessionId.ToString(), nameof(Session.State)) is var stateString && !Enum.TryParse<State>(stateString, out var state))
-        {
-            throw new InvalidOperationException($"Session {sessionId} does not exist.");
-        }
-
-        if (!database.KeyExists($"{sessionId}:participants:{Context.ConnectionId}"))
-        {
-            throw new ArgumentException($"There is no participant with id '{Context.ConnectionId}' in this session.");
-        }
-
         await database.HashSetAsync($"{sessionId}:participants:{Context.ConnectionId}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget);
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(
             Context.ConnectionId,
-            state == State.Hidden && !string.IsNullOrEmpty(points)
-                ? "points"
-                : points
+            points
         );
     }
 
     public async Task UpdateSessionStateAsync(Guid sessionId, State state)
     {
-        if (await database.HashGetAsync(sessionId.ToString(), nameof(Session.State)) is var stateString && !Enum.TryParse<State>(stateString, out var currentState))
-        {
-            throw new InvalidOperationException($"Session {sessionId} does not exist.");
-        }
-
-        if (currentState == state)
-        {
-            return;
-        }
-
         await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.State), Enum.GetName(state)) ], flags: CommandFlags.FireAndForget);
 
         if (state == State.Hidden)
@@ -183,8 +157,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         }
         else
         {
-            var participants = await GetParticipantsAsync(sessionId);
-            await Clients.Group(sessionId.ToString()).OnReveal(participants);
+            await Clients.Group(sessionId.ToString()).OnReveal();
         }
     }
 
@@ -195,11 +168,6 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         if (string.IsNullOrEmpty(title))
         {
             throw new ArgumentException($"There must be a title.");
-        }
-
-        if (!await database.KeyExistsAsync(sessionId.ToString()))
-        {
-            throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
         await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.Title), title) ], flags: CommandFlags.FireAndForget);

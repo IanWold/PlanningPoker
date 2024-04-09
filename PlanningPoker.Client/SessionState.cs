@@ -232,13 +232,12 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnReveal(IEnumerable<Participant> participants)
+    public async Task OnReveal()
     {
         await EnsureInitialized();
 
         Session = Session! with {
-            State = State.Revealed,
-            Participants = participants
+            State = State.Revealed
         };
 
         NotifyUpdate();

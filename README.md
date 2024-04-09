@@ -6,6 +6,6 @@ Note that I've just started development on this so some documentation and whatno
 
 # Architecture
 
-The client is a Blazor SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.
+The client is a Blazor WASM SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.
 
 The deployed isntance is hosted on Railway, which hosts the server in Docker.

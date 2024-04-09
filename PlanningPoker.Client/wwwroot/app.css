@@ -60,6 +60,17 @@
         content: var(--blazor-load-percentage-text, "Loading");
     }
 
+.logo-hero {
+    display: flex;
+    justify-content: center;
+
+    padding-top: 60px;
+
+    img {
+        height: 100px;
+    }
+}
+
 h1:focus {
     outline: none;
 }
@@ -81,15 +92,20 @@ input {
 }
 
 h1.font-title {
-    font-size: 39pt;
+    font-size: 41pt;
     text-align: center;
+    transform: skewY(-5deg);
 }
 
 h1.font-cursive {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: -12px;
+    width: auto;
+    margin-left: 60px;
+    font-weight: normal;
     font-style: italic;
+    font-size: 60pt;
+    transform: skewY(-5deg);
+    margin-top: -60px;
+    margin-bottom: -24px;
 }
 
 .gap-2 {

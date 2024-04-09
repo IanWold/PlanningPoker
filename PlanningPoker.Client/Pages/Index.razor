@@ -3,7 +3,11 @@
 
 <PageTitle>Planning Poker</PageTitle>
 
-<div class="container pt-5" style="max-width: 600px;">
+<div class="container p-0" style="max-width: 600px;">
+    <div class="logo-hero">
+        <img src="img3.png">
+    </div>
+    
     <h1 class="font-cursive">Free</h1>
     <h1 class="font-title">Planning Poker</h1>
 
@@ -11,9 +15,8 @@
         Always Free * Unlimited Sessions * Unlimited Participants
     </div>
 
-    <div class="card shadow-sm">
+    <div class="card shadow border-0">
         <div class="card-body">
-            <h5 class="card-title text-center mb-4">Start a Planning Session</h5>
             <div class="d-flex gap-2">
                 <div class="flex-fill">
                     <input type="text" class="form-control" placeholder="Session Title" @bind-value=Title>
@@ -22,7 +25,7 @@
                     <input type="text" class="form-control" placeholder="Your Name" @bind-value=Name>
                 </div>
                 <div class="">
-                    <button class="btn btn-primary" @onclick="@(async () => await _state.CreateAsync(Title, Name))">Start</button>
+                    <button class="btn btn-primary" @onclick="@(async () => await _state.CreateAsync(Title, Name))">Start Planning</button>
                 </div>
             </div>
         </div>

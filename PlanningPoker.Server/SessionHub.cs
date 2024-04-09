@@ -1,19 +1,40 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using System.Collections.Concurrent;
+using Microsoft.AspNetCore.SignalR;
 using StackExchange.Redis;
-using System.Text.Json;
 
 namespace PlanningPoker.Server;
 
 public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHub
 {
-    private async Task<Session?> GetSessionAsync(Guid sessionId) =>
-        await database.StringGetAsync(sessionId.ToString()) is RedisValue session
-        && session.HasValue
-        ? JsonSerializer.Deserialize<Session>((string)session!)
-        : null;
+    private async Task<Session> GetSessionAsync(Guid sessionId)
+    {
+        var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
 
-    private async Task UpdateSessionAsync(Guid sessionId, Session session) =>
-        await database.StringSetAsync(sessionId.ToString(), JsonSerializer.Serialize(session));
+        var session = new Session("", [], State.Hidden);
+
+        var participants = new ConcurrentBag<Participant>();
+
+        Task[] readTasks = [
+            database.HashGetAllAsync(sessionId.ToString()).ContinueWith(s => 
+                session = new Session(
+                    Title: s.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
+                    Participants: [],
+                    State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!)
+                )
+            ),
+            ..participantIds.Select(i => database.HashGetAllAsync($"{sessionId}:participants:{i}").ContinueWith(p =>
+                participants.Add(new Participant(
+                    i!,
+                    p.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
+                    p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!
+                )))
+            )
+        ];
+
+        Task.WaitAll(readTasks);
+
+        return session! with { Participants = participants };
+    }
 
     public async Task<Session> ConnectToSessionAsync(Guid sessionId)
     {
@@ -39,13 +60,21 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         Guid newGuid;
         bool insertResult;
 
-        var newSession = new Session(title, [], State.Hidden);
-        var newSessionJson = JsonSerializer.Serialize(newSession);
-
         do
         {
             newGuid = Guid.NewGuid();
-            insertResult = await database.StringSetAsync(newGuid.ToString(), newSessionJson, when: When.NotExists);
+
+            var transaction = database.CreateTransaction();
+
+            transaction.AddCondition(Condition.KeyNotExists(newGuid.ToString()));
+            var _ = transaction.HashSetAsync(key: newGuid.ToString(),
+                hashFields: [
+                    new HashEntry(nameof(Session.Title), title),
+                    new HashEntry(nameof(Session.State), Enum.GetName(State.Hidden))
+                ]
+            );
+
+            insertResult = await transaction.ExecuteAsync();
         }
         while (!insertResult);
 
@@ -58,19 +87,20 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
     {
         name = name.Trim();
 
-        if (await GetSessionAsync(sessionId) is not Session session)
+        if (!await database.KeyExistsAsync(sessionId.ToString()))
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (session.Participants.Any(p => p.Name.ToUpperInvariant() == name.ToUpperInvariant()))
-        {
-            throw new ArgumentException($"There is already a participant with the name '{name}' in this session.");
-        }
+        await database.HashSetAsync(
+            $"{sessionId}:participants:{Context.ConnectionId}",
+            [
+                new HashEntry(nameof(Participant.Name), name),
+                new HashEntry(nameof(Participant.Points), "")
+            ], flags: CommandFlags.FireAndForget
+        );
 
-        await UpdateSessionAsync(sessionId, session with {
-            Participants = [.. session.Participants, new(Context.ConnectionId, name, "")]
-        });
+        await database.ListRightPushAsync($"{sessionId}:participants", Context.ConnectionId, flags: CommandFlags.FireAndForget);
 
         await Clients.Group(sessionId.ToString()).OnParticipantAdded(Context.ConnectionId, name);
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
@@ -82,26 +112,13 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.ToString());
 
-        if (await GetSessionAsync(sessionId) is not Session session)
-        {
-            throw new InvalidOperationException($"Session {sessionId} does not exist.");
-        }
+        await database.ListRemoveAsync($"{sessionId}:participants", Context.ConnectionId, flags: CommandFlags.FireAndForget);
+        await database.KeyDeleteAsync($"{sessionId}:participants:{Context.ConnectionId}", flags: CommandFlags.FireAndForget);
 
-        if (!session.Participants.Any(p => p.ParticipantId == Context.ConnectionId))
+        if (await database.ListLengthAsync($"{sessionId}:participants") == 0)
         {
-            return;
-        }
-
-        await UpdateSessionAsync(sessionId, session with {
-            Participants =
-                session.Participants
-                .Where(p => p.ParticipantId != Context.ConnectionId)
-                .ToList()
-        });
-
-        if (session.Participants.Count() == 1)
-        {
-            await database.KeyDeleteAsync(sessionId.ToString());
+            await database.KeyDeleteAsync(sessionId.ToString(), flags: CommandFlags.FireAndForget);
+            await database.KeyDeleteAsync($"{sessionId}:participants", flags: CommandFlags.FireAndForget);
         }
         else
         {
@@ -113,30 +130,21 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
     {
         points = points.Trim();
 
-        if (await GetSessionAsync(sessionId) is not Session session)
+        if (await database.HashGetAsync(sessionId.ToString(), nameof(Session.State)) is var stateString && !Enum.TryParse<State>(stateString, out var state))
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (!session.Participants.Any(p => p.ParticipantId == Context.ConnectionId))
+        if (!database.KeyExists($"{sessionId}:participants:{Context.ConnectionId}"))
         {
             throw new ArgumentException($"There is no participant with id '{Context.ConnectionId}' in this session.");
         }
 
-        await UpdateSessionAsync(sessionId, session with {
-            Participants =
-                session.Participants
-                .Select(p =>
-                    p.ParticipantId == Context.ConnectionId
-                        ? p with { Points = points}
-                        : p
-                )
-                .ToList()
-        });
+        await database.HashSetAsync($"{sessionId}:participants:{Context.ConnectionId}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget);
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(
             Context.ConnectionId,
-            session.State == State.Hidden && !string.IsNullOrEmpty(points)
+            state == State.Hidden && !string.IsNullOrEmpty(points)
                 ? "points"
                 : points
         );
@@ -144,29 +152,25 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
 
     public async Task UpdateSessionStateAsync(Guid sessionId, State state)
     {
-        if (await GetSessionAsync(sessionId) is not Session session)
+        if (await database.HashGetAsync(sessionId.ToString(), nameof(Session.State)) is var stateString && !Enum.TryParse<State>(stateString, out var currentState))
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        if (session.State == state)
+        if (currentState == state)
         {
             return;
         }
 
-        await UpdateSessionAsync(sessionId, session with {
-            State = state,
-            Participants = state == State.Hidden
-                ? session.Participants.Select(p => p with { Points = "" }).ToList()
-                : session.Participants
-        });
-        
+        await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.State), Enum.GetName(state)) ]);
+
         if (state == State.Hidden)
         {
             await Clients.Group(sessionId.ToString()).OnHide();
         }
         else
         {
+            var session = await GetSessionAsync(sessionId);
             await Clients.Group(sessionId.ToString()).OnReveal(session.Participants);
         }
     }
@@ -180,14 +184,12 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
             throw new ArgumentException($"There must be a title.");
         }
 
-        if (await GetSessionAsync(sessionId) is not Session session)
+        if (!await database.KeyExistsAsync(sessionId.ToString()))
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        await UpdateSessionAsync(sessionId, session with {
-            Title = title
-        });
+        await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.Title), title) ], flags: CommandFlags.FireAndForget);
         
         await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
     }

@@ -121,19 +121,19 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task HideAsync()
     {
         await EnsureInitialized();
-        await _server!.UpdateSessionStateAsync(_sessionId!.Value, State.Hidden);
+        Task.Run(async () => await _server!.UpdateSessionStateAsync(_sessionId!.Value, State.Hidden));
     }
 
     public async Task RevealAsync()
     {
         await EnsureInitialized();
-        await _server!.UpdateSessionStateAsync(_sessionId!.Value, State.Revealed);
+        Task.Run(async () =>await _server!.UpdateSessionStateAsync(_sessionId!.Value, State.Revealed));
     }
 
     public async Task UpdatePointsAsync(string points)
     {
         await EnsureInitialized();
-        await _server!.UpdateParticipantPointsAsync(_sessionId!.Value, points);
+        Task.Run(async () =>await _server!.UpdateParticipantPointsAsync(_sessionId!.Value, points));
 
         Session = Session! with {
             Participants = [.. Session!.Participants.Where(p => p.ParticipantId != _participantId), Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Points = points }]
@@ -168,7 +168,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task UpdateTitle(string title)
     {
         await EnsureInitialized();
-        await _server!.UpdateSessionTitleAsync(_sessionId!.Value, title);
+        Task.Run(async () =>await _server!.UpdateSessionTitleAsync(_sessionId!.Value, title));
 
         Session = Session! with {
             Title = title

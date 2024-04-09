@@ -6,13 +6,29 @@ namespace PlanningPoker.Server;
 
 public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHub
 {
-    private async Task<Session> GetSessionAsync(Guid sessionId)
+    private async Task<IEnumerable<Participant>> GetParticipantsAsync(Guid sessionId)
     {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
-
-        var session = new Session("", [], State.Hidden);
-
         var participants = new ConcurrentBag<Participant>();
+
+        var readTasks = participantIds.Select(i => database.HashGetAllAsync($"{sessionId}:participants:{i}").ContinueWith(p =>
+            participants.Add(new Participant(
+                i!,
+                p.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
+                p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!
+            )))
+        )
+        .ToArray();
+
+        await Task.WhenAll(readTasks);
+
+        return participants.ToArray();
+    }
+
+    private async Task<Session> GetSessionAsync(Guid sessionId)
+    {
+        var session = new Session("", [], State.Hidden);
+        IEnumerable<Participant> participants = [];
 
         Task[] readTasks = [
             database.HashGetAllAsync(sessionId.ToString()).ContinueWith(s => 
@@ -22,16 +38,10 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
                     State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!)
                 )
             ),
-            ..participantIds.Select(i => database.HashGetAllAsync($"{sessionId}:participants:{i}").ContinueWith(p =>
-                participants.Add(new Participant(
-                    i!,
-                    p.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
-                    p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!
-                )))
-            )
+            GetParticipantsAsync(sessionId).ContinueWith(p => participants = p.Result)
         ];
 
-        Task.WaitAll(readTasks);
+        await Task.WhenAll(readTasks);
 
         return session! with { Participants = participants };
     }
@@ -162,7 +172,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
             return;
         }
 
-        await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.State), Enum.GetName(state)) ]);
+        await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.State), Enum.GetName(state)) ], flags: CommandFlags.FireAndForget);
 
         if (state == State.Hidden)
         {
@@ -173,8 +183,8 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         }
         else
         {
-            var session = await GetSessionAsync(sessionId);
-            await Clients.Group(sessionId.ToString()).OnReveal(session.Participants);
+            var participants = await GetParticipantsAsync(sessionId);
+            await Clients.Group(sessionId.ToString()).OnReveal(participants);
         }
     }
 

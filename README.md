@@ -9,7 +9,7 @@ Note that I've just started development on this so some documentation and whatno
 
 # Architecture
 
-<iframe src="https://link.excalidraw.com/readonly/NDvp574BNGntF6oGc3Cg?darkMode=true" width="100%" height="100%" style="border: none;"></iframe>
+<a href="https://link.excalidraw.com/readonly/NDvp574BNGntF6oGc3Cg?darkMode=true"><img src="https://raw.githubusercontent.com/IanWold/PlanningPoker/main/architecture.png"></a>
 
 The client is a Blazor WASM SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.
 

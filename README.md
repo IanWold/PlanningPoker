@@ -1,9 +1,8 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/IanWold/PlanningPoker/main/logo.png" height="150">
   <h1>FreePlanningPoker.io</h1>
-  <img alt="Website" src="https://img.shields.io/website?url=https%3A%2F%2Ffreeplanningpoker.io&style=flat-square">
-  <img alt="GitHub Issues or Pull Requests by label" src="https://img.shields.io/github/issues/ianwold/planningpoker/good%20first%20issue?style=flat-square">
-
+  <a href="https://freeplanningpoker.io"><img alt="Website" src="https://img.shields.io/website?url=https%3A%2F%2Ffreeplanningpoker.io&style=flat-square"></a>
+  <a href="https://github.com/IanWold/PlanningPoker/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22"><img alt="GitHub Issues or Pull Requests by label" src="https://img.shields.io/github/issues/ianwold/planningpoker/good%20first%20issue?style=flat-square"></a>
 </div>
 
 This is Free Planning Poker, a free tool for software teams to do "planning poker" exercises to estimate the difficulty and length of development tasks. You can probably use it for other purposes if you need, too. It's always going to be free, without limits.

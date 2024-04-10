@@ -43,6 +43,8 @@ In future I want to add some documentation around deploying on Docker, and since
 
 ## Via Railway
 
+_(See also my guide on [deploying ASP and Blazor apps on Railway](https://ian.wold.guru/Posts/deploying_aspdotnet_7_projects_with_railway.html))_
+
 1. [Fork](https://github.com/IanWold/PlanningPoker/fork) and clone this repo
 2. Create an account at [Railway](https://railway.app)
 3. Create a [new project](https://docs.railway.app/guides/projects), and [add a Redis instance](https://docs.railway.app/guides/redis) to it

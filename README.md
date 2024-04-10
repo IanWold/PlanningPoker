@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/IanWold/PlanningPoker/main/PlanningPoker.Client/wwwroot/img3.png" height="100">
+  <img src="https://raw.githubusercontent.com/IanWold/PlanningPoker/main/logo.png" height="100">
   <h1>FreePlanningPoker.io</h1>
 </div>
 

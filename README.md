@@ -9,14 +9,6 @@ This is Free Planning Poker, a free tool for software teams to do "planning poke
 
 Note that I've just started development on this so some documentation and whatnot is a WIP as this gets set up!
 
-# Architecture
-
-<a href="https://link.excalidraw.com/readonly/NDvp574BNGntF6oGc3Cg?darkMode=true"><img src="https://raw.githubusercontent.com/IanWold/PlanningPoker/main/architecture.png"></a>
-
-The client is a Blazor WASM SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.
-
-The deployed isntance is hosted on Railway, which hosts the server in Docker.
-
 # Running Locally
 
 The ideal scenario is that you can "clone and go" without much (if any) work, but there's a couple steps you need right now:
@@ -65,6 +57,10 @@ Now you should be good to go! Railway can [provide a domain name](https://docs.r
 In future I'll be adding some of these settings to a Railway config file in the repo, eliminating the need for a couple of these steps.
 
 # Developing
+
+The client is a Blazor WASM SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.
+
+<a href="https://link.excalidraw.com/readonly/NDvp574BNGntF6oGc3Cg?darkMode=true"><img src="https://raw.githubusercontent.com/IanWold/PlanningPoker/main/architecture.png"></a>
 
 ## Server
 

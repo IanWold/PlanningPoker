@@ -136,7 +136,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         Task.Run(async () =>await _server!.UpdateParticipantPointsAsync(_sessionId!.Value, points));
 
         Session = Session! with {
-            Participants = [.. Session!.Participants.Where(p => p.ParticipantId != _participantId), Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Points = points }]
+            Participants = [
+                .. Session!.Participants.Where(p => p.ParticipantId != _participantId),
+                Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Points = points }
+            ]
         };
 
         NotifyUpdate();
@@ -165,13 +168,28 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task UpdateTitle(string title)
+    public async Task UpdateTitleAsync(string title)
     {
         await EnsureInitialized();
-        Task.Run(async () =>await _server!.UpdateSessionTitleAsync(_sessionId!.Value, title));
+        Task.Run(async () => await _server!.UpdateSessionTitleAsync(_sessionId!.Value, title));
 
         Session = Session! with {
             Title = title
+        };
+
+        NotifyUpdate();
+    }
+
+    public async Task UpdateNameAsync(string name)
+    {
+        await EnsureInitialized();
+        Task.Run(async () => await _server!.UpdateParticipantNameAsync(_sessionId!.Value, name));
+
+        Session = Session! with {
+            Participants = [
+                .. Session!.Participants.Where(p => p.ParticipantId != _participantId),
+                Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Name = name }
+            ]
         };
 
         NotifyUpdate();
@@ -249,6 +267,20 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         Session = Session! with {
             Title = title
+        };
+
+        NotifyUpdate();
+    }
+
+    public async Task OnParticipantNameUpdated(string participantId, string name)
+    {
+        await EnsureInitialized();
+        
+        Session = Session! with {
+            Participants = [
+                .. Session!.Participants.Where(p => p.ParticipantId != participantId),
+                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = name }
+            ]
         };
 
         NotifyUpdate();

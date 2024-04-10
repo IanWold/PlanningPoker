@@ -125,15 +125,27 @@ h1.font-cursive {
     align-items: center;
 }
 
+button ion-icon {
+    margin-bottom: -2px;
+}
+
+button.hidden-icon ion-icon {
+    display: none;
+}
+
+button.hidden-icon:hover ion-icon {
+    display: inline-block;
+}
+
 .btn-square {
     width: 38px;
     height: 38px;
     padding: 0;
-}
 
-button ion-icon {
-    margin-top: 6px;
-    font-size: 14pt;
+    ion-icon {
+        margin-top: 6px;
+        font-size: 14pt;
+    }
 }
 
 .circle {
@@ -155,6 +167,7 @@ button ion-icon {
 
         ion-icon {
             font-size: 20pt !important;
+            margin-top: 5px;
         }
     }
 }
@@ -176,6 +189,8 @@ button ion-icon {
 
     transform: var(--transform);
     transition: transform 1.5s ease-in-out;
+
+    margin-top: -21px;
 
     label {
         text-align: center;

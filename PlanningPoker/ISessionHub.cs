@@ -9,4 +9,5 @@ public interface ISessionHub
     Task UpdateParticipantPointsAsync(Guid sessionId, string points);
     Task UpdateSessionStateAsync(Guid sessionId, State state);
     Task UpdateSessionTitleAsync(Guid sessionId, string title);
+    Task UpdateParticipantNameAsync(Guid sessionId, string name);
 }

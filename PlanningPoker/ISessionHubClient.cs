@@ -8,4 +8,5 @@ public interface ISessionHubClient
     Task OnReveal();
     Task OnHide();
     Task OnTitleUpdated(string title);
+    Task OnParticipantNameUpdated(string participantId, string name);
 }

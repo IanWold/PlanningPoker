@@ -3,7 +3,7 @@
 
 @using System
 
-<PageTitle>Session</PageTitle>
+<PageTitle>@(_state.Session?.Title ?? "Session")</PageTitle>
 
 @if (_state.Session is null)
 {
@@ -11,13 +11,39 @@
 }
 else
 {
-    @if (_state.Self is null)
+    @if (_state.Self is null && !IsEditingName)
     {
         <div class="overlay">
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <div class="d-flex gap-2 w-100">
-                    <input type="text" class="form-control" id="participantName" placeholder="Enter your name to join the session" @bind-value=Name>
+                    <input type="text" class="form-control" placeholder="Enter your name to join the session" @bind-value=Name>
                     <button class="btn btn-primary" @onclick="@(async () => await _state.JoinAsync(Name))">Join</button>
+                </div>
+            </div> </div> </div> </div>
+        </div>
+    }
+
+    @if (IsEditingTitle)
+    {
+        <div class="overlay">
+            <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
+                <div class="d-flex gap-2 w-100">
+                    <input type="text" class="form-control" placeholder="Enter a title for the session" @bind-value=Title>
+                    <button class="btn border-0 btn-outline-success" @onclick=OnSaveTitleClicked><ion-icon name="checkmark-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-secondary" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
+                </div>
+            </div> </div> </div> </div>
+        </div>
+    }
+
+    @if (IsEditingName)
+    {
+        <div class="overlay">
+            <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
+                <div class="d-flex gap-2 w-100">
+                    <input type="text" class="form-control" placeholder="Enter your name" @bind-value=Name>
+                    <button class="btn border-0 btn-outline-success" @onclick=OnSaveNameClicked><ion-icon name="checkmark-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-secondary" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </div>
             </div> </div> </div> </div>
         </div>
@@ -66,16 +92,12 @@ else
         </div>
     }
 
-    <div class="session" style="@(_state.Self is null ? "filter: blur(1px)" : "")">
-        <div class="card m-3 w-100 shadow-sm border-0" style="grid-area: header; max-width: 600px;">
+    <div class="session" style="@(IsContentBlurred ? "filter: blur(1px)" : "")">
+        <div class="card m-3 shadow-sm border-0" style="grid-area: header; width: 600px;">
             <div class="card-body p-2">
-                <div class="d-flex gap-2 justify-content-between">
-                    <div>
-                        <label>@_state.Session.Title</label>
-                    </div>
-                    <div>
-                        <label>@_state.Self?.Name</label>
-                    </div>
+                <div class="d-flex gap-2 w-100 justify-content-between">
+                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon fw-bold" @onclick=OnEditTitleClicked>@_state.Session.Title <ion-icon name="settings-sharp"></ion-icon></button>
+                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon" @onclick=OnEditNameClicked><ion-icon name="person-sharp"></ion-icon> @_state.Self?.Name</button>
                 </div>
             </div>
         </div>
@@ -139,11 +161,60 @@ else
     [Parameter]
     public Guid SessionId { get; set; }
 
+    string Title { get; set; } = string.Empty;
+
     string Name { get; set; } = string.Empty;
+
+    bool IsEditingTitle { get; set; }
+
+    bool IsEditingName { get; set; }
+
+    bool IsContentBlurred =>
+        _state.Self is null
+        || IsEditingTitle
+        || IsEditingName;
 
     protected override async Task OnInitializedAsync()
     {
         _state.OnStateChanged += (o, e) => StateHasChanged();
         await _state.LoadAsync(SessionId);
+    }
+
+    void OnEditTitleClicked()
+    {
+        Title = _state.Session.Title;
+        IsEditingTitle = true;
+        StateHasChanged();
+    }
+
+    void OnEditNameClicked()
+    {
+        Title = _state.Self!.Name;
+        IsEditingName = true;
+        StateHasChanged();
+    }
+
+    void OnCloseEditTitleModalClicked()
+    {
+        IsEditingTitle = false;
+    }
+
+    void OnCloseEditNameModalClicked()
+    {
+        IsEditingName = false;
+    }
+
+    async Task OnSaveTitleClicked()
+    {
+        await _state.UpdateTitleAsync(Title);
+        IsEditingTitle = false;
+        StateHasChanged();
+    }
+
+    async Task OnSaveNameClicked()
+    {
+        await _state.UpdateNameAsync(Name);
+        IsEditingName = false;
+        StateHasChanged();
     }
 }

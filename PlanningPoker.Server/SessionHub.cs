@@ -174,4 +174,18 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
         
         await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
     }
+
+    public async Task UpdateParticipantNameAsync(Guid sessionId, string name)
+    {
+        name = name.Trim();
+
+        if (string.IsNullOrEmpty(name))
+        {
+            throw new ArgumentException($"There must be a title.");
+        }
+
+        await database.HashSetAsync($"{sessionId}:participants:{Context.ConnectionId}", [ new HashEntry(nameof(Participant.Name), name) ], flags: CommandFlags.FireAndForget);
+        
+        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantNameUpdated(Context.ConnectionId, name);
+    }
 }

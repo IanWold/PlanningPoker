@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.AspNetCore.SignalR;
-using StackExchange.Redis;
+﻿using Microsoft.AspNetCore.SignalR;
 
 namespace PlanningPoker.Server;
 

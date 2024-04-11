@@ -36,7 +36,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
     {
         name = name.Trim();
 
-        if (!await store.ExistsSessionAsync(sessionId.ToString()))
+        if (!await store.ExistsSessionAsync(sessionId))
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }

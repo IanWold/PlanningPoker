@@ -64,7 +64,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
     {
         points = points.Trim();
 
-        Task.Run(async () => await store.UpdateParticipantPointsAsync(Guid sessionId, string points));
+        Task.Run(async () => await store.UpdateParticipantPointsAsync(sessionId, points));
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(
             Context.ConnectionId,
@@ -109,7 +109,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
             throw new ArgumentException($"There must be a title.");
         }
 
-        Task.Run(async () => await store.UpdateParticipantNameAsync(Guid sessionId, string name));
+        Task.Run(async () => await store.UpdateParticipantNameAsync(sessionId, name));
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantNameUpdated(Context.ConnectionId, name);
     }

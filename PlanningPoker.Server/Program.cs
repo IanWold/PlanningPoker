@@ -19,17 +19,22 @@ if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } p
     );
 }
 
-var redisConnectionString = builder.Configuration.GetConnectionString("Redis") ?? throw new Exception("Redis is required.");
+var signalRBuilder = builder.Services.AddSignalR();
 
-builder.Services.AddSingleton<IConnectionMultiplexer>(await ConnectionMultiplexer.ConnectAsync(redisConnectionString));
-builder.Services.AddTransient(s => s.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
-
-builder.Services
-    .AddSignalR()
-    .AddStackExchangeRedis(
+if (builder.Configuration.GetConnectionString("Redis") is string redisConnectionString)
+{
+    builder.Services.AddSingleton<IConnectionMultiplexer>(await ConnectionMultiplexer.ConnectAsync(redisConnectionString));
+    builder.Services.AddTransient(s => s.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
+    builder.Services.AddTransient<IStore, RedisStore>();
+    signalRBuilder.AddStackExchangeRedis(
         redisConnectionString,
         options => options.Configuration.ChannelPrefix = RedisChannel.Literal("signalr_prod")
     );
+}
+else
+{
+    builder.Services.AddTransient<IStore, InMemoryStore>();
+}
 
 builder.Services.AddRazorPages();
 

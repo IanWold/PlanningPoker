@@ -95,7 +95,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
             throw new ArgumentException($"There must be a title.");
         }
 
-        Task.Run(async () => store.UpdateSessionTitleAsync(sessionId, title))
+        Task.Run(async () => store.UpdateSessionTitleAsync(sessionId, title));
         
         await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
     }

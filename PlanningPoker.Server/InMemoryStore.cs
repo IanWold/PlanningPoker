@@ -27,12 +27,12 @@ public class InMemoryStore : IStore
         throw new NotImplementedException();
     }
 
-    public Task UpdateParticipantNameAsync(Guid sessionId, string name)
+    public Task UpdateParticipantNameAsync(Guid sessionId, string participantId, string name)
     {
         throw new NotImplementedException();
     }
 
-    public Task UpdateParticipantPointsAsync(Guid sessionId, string points)
+    public Task UpdateParticipantPointsAsync(Guid sessionId, string participantId, string points)
     {
         throw new NotImplementedException();
     }

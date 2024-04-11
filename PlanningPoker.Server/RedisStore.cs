@@ -58,7 +58,7 @@ public class RedisStore(IDatabase database) : IStore
 
     public async Task<bool> ExistsSessionAsync(Guid sessionId)
     {
-        return await database.SessionExistsAsync(sessionId.ToString());
+        return await database.KeyExistsAsync(sessionId.ToString());
     }
 
     public async Task<Session?> GetSessionAsync(Guid sessionId)
@@ -103,14 +103,14 @@ public class RedisStore(IDatabase database) : IStore
         return session;
     }
 
-    public async Task UpdateParticipantNameAsync(Guid sessionId, string name)
+    public async Task UpdateParticipantNameAsync(Guid sessionId, string participantId, string name)
     {
-        await database.HashSetAsync($"{sessionId}:participants:{Context.ConnectionId}", [ new HashEntry(nameof(Participant.Name), name) ], flags: CommandFlags.FireAndForget);
+        await database.HashSetAsync($"{sessionId}:participants:{participantId}", [ new HashEntry(nameof(Participant.Name), name) ], flags: CommandFlags.FireAndForget);
     }
     
-    public async Task UpdateParticipantPointsAsync(Guid sessionId, string points)
+    public async Task UpdateParticipantPointsAsync(Guid sessionId, string participantId, string points)
     {
-        await database.HashSetAsync($"{sessionId}:participants:{Context.ConnectionId}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget);
+        await database.HashSetAsync($"{sessionId}:participants:{participantId}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget);
     }
 
     public async Task UpdateSessionStateAsync(Guid sessionId, State state)

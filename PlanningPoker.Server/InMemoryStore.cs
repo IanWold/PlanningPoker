@@ -6,13 +6,18 @@ public class InMemoryStore : IStore
     {
         throw new NotImplementedException();
     }
-    
+
     Task<Guid> CreateSessionAsync(string title)
     {
         throw new NotImplementedException();
     }
 
     Task DeleteParticipantAsync(Guid sessionId, string participantId)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<bool> ExistsSessionAsync(Guid sessionId)
     {
         throw new NotImplementedException();
     }

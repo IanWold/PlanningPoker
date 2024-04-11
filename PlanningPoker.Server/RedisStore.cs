@@ -41,7 +41,7 @@ public class RedisStore(IDatabase database) : IStore
         return newGuid;
     }
     
-    Task DeleteParticipantAsync(Guid sessionId, string participantId)
+    public async Task DeleteParticipantAsync(Guid sessionId, string participantId)
     {
         await database.ListRemoveAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
         await database.KeyDeleteAsync($"{sessionId}:participants:{participantId}", flags: CommandFlags.FireAndForget);
@@ -51,6 +51,11 @@ public class RedisStore(IDatabase database) : IStore
             await database.KeyDeleteAsync(sessionId.ToString(), flags: CommandFlags.FireAndForget);
             await database.KeyDeleteAsync($"{sessionId}:participants", flags: CommandFlags.FireAndForget);
         }
+    }
+
+    public async Task<bool> ExistsSessionAsync(Guid sessionId)
+    {
+        return await database.SessionExistsAsync(sessionId.ToString());
     }
 
     public async Task<Session?> GetSessionAsync(Guid sessionId)

@@ -4,7 +4,7 @@ using StackExchange.Redis;
 
 namespace PlanningPoker.Server;
 
-public class SessionHub(IDatabase database, IStore store) : Hub<ISessionHubClient>, ISessionHub
+public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 {
     public async Task<Session> ConnectToSessionAsync(Guid sessionId)
     {
@@ -38,7 +38,7 @@ public class SessionHub(IDatabase database, IStore store) : Hub<ISessionHubClien
     {
         name = name.Trim();
 
-        if (!await database.KeyExistsAsync(sessionId.ToString()))
+        if (!await store.ExistsSessionAsync(sessionId.ToString()))
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }

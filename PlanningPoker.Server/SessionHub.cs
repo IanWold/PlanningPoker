@@ -1,50 +1,13 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.AspNetCore.SignalR;
-using StackExchange.Redis;
+﻿using Microsoft.AspNetCore.SignalR;
 
 namespace PlanningPoker.Server;
 
-public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHub
+#pragma warning disable CS4014 // Task.Run fire-and-forget
+public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 {
-    private async Task<Session?> GetSessionAsync(Guid sessionId)
-    {
-        var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
-
-        var session = new Session("", [], State.Hidden);
-        var participants = new ConcurrentBag<Participant>();
-
-        Task[] readTasks = [
-            database.HashGetAllAsync(sessionId.ToString()).ContinueWith(s =>
-                s.Result.Length > 0
-                    ? session = new Session(
-                        Title: s.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
-                        Participants: [],
-                        State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!)
-                    )
-                    : null
-            ),
-            ..participantIds.Select(i => database.HashGetAllAsync($"{sessionId}:participants:{i}").ContinueWith(p =>
-                participants.Add(new Participant(
-                    i!,
-                    p.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
-                    p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!
-                )))
-            )
-        ];
-
-        await Task.WhenAll(readTasks);
-
-        if (session is not null)
-        {
-            session = session with { Participants = participants.ToArray() };
-        }
-
-        return session;
-    }
-
     public async Task<Session> ConnectToSessionAsync(Guid sessionId)
     {
-        if (await GetSessionAsync(sessionId) is not Session session)
+        if (await store.GetSessionAsync(sessionId) is not Session session)
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
@@ -63,26 +26,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
             throw new ArgumentException($"There must be a title.");
         }
 
-        Guid newGuid;
-        bool insertResult;
-
-        do
-        {
-            newGuid = Guid.NewGuid();
-
-            var transaction = database.CreateTransaction();
-
-            transaction.AddCondition(Condition.KeyNotExists(newGuid.ToString()));
-            var _ = transaction.HashSetAsync(key: newGuid.ToString(),
-                hashFields: [
-                    new HashEntry(nameof(Session.Title), title),
-                    new HashEntry(nameof(Session.State), Enum.GetName(State.Hidden))
-                ]
-            );
-
-            insertResult = await transaction.ExecuteAsync();
-        }
-        while (!insertResult);
+        var newGuid = await store.CreateSessionAsync(title);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, newGuid.ToString());
 
@@ -93,20 +37,12 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
     {
         name = name.Trim();
 
-        if (!await database.KeyExistsAsync(sessionId.ToString()))
+        if (!await store.ExistsSessionAsync(sessionId))
         {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        await database.HashSetAsync(
-            $"{sessionId}:participants:{Context.ConnectionId}",
-            [
-                new HashEntry(nameof(Participant.Name), name),
-                new HashEntry(nameof(Participant.Points), "")
-            ], flags: CommandFlags.FireAndForget
-        );
-
-        await database.ListRightPushAsync($"{sessionId}:participants", Context.ConnectionId, flags: CommandFlags.FireAndForget);
+        Task.Run(async () => await store.CreateParticipantAsync(sessionId, Context.ConnectionId, name));
 
         await Clients.Group(sessionId.ToString()).OnParticipantAdded(Context.ConnectionId, name);
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
@@ -118,25 +54,16 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.ToString());
 
-        await database.ListRemoveAsync($"{sessionId}:participants", Context.ConnectionId, flags: CommandFlags.FireAndForget);
-        await database.KeyDeleteAsync($"{sessionId}:participants:{Context.ConnectionId}", flags: CommandFlags.FireAndForget);
+        Task.Run(async () => await store.DeleteParticipantAsync(sessionId, Context.ConnectionId));
 
-        if (await database.ListLengthAsync($"{sessionId}:participants") == 0)
-        {
-            await database.KeyDeleteAsync(sessionId.ToString(), flags: CommandFlags.FireAndForget);
-            await database.KeyDeleteAsync($"{sessionId}:participants", flags: CommandFlags.FireAndForget);
-        }
-        else
-        {
-            await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
-        }
+        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
     }
 
     public async Task UpdateParticipantPointsAsync(Guid sessionId, string points)
     {
         points = points.Trim();
 
-        await database.HashSetAsync($"{sessionId}:participants:{Context.ConnectionId}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget);
+        Task.Run(async () => await store.UpdateParticipantPointsAsync(sessionId, Context.ConnectionId, points));
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(
             Context.ConnectionId,
@@ -146,14 +73,11 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
 
     public async Task UpdateSessionStateAsync(Guid sessionId, State state)
     {
-        await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.State), Enum.GetName(state)) ], flags: CommandFlags.FireAndForget);
+        Task.Run(async () => await store.UpdateSessionStateAsync(sessionId, state));
 
         if (state == State.Hidden)
         {
             await Clients.Group(sessionId.ToString()).OnHide();
-
-            var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
-            Parallel.ForEach(participantIds, i => database.HashSet($"{sessionId}:participants:{i}", [ new HashEntry(nameof(Participant.Points), "") ], flags: CommandFlags.FireAndForget));
         }
         else
         {
@@ -170,7 +94,7 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
             throw new ArgumentException($"There must be a title.");
         }
 
-        await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.Title), title) ], flags: CommandFlags.FireAndForget);
+        Task.Run(async () => store.UpdateSessionTitleAsync(sessionId, title));
         
         await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
     }
@@ -184,8 +108,9 @@ public class SessionHub(IDatabase database) : Hub<ISessionHubClient>, ISessionHu
             throw new ArgumentException($"There must be a title.");
         }
 
-        await database.HashSetAsync($"{sessionId}:participants:{Context.ConnectionId}", [ new HashEntry(nameof(Participant.Name), name) ], flags: CommandFlags.FireAndForget);
-        
+        Task.Run(async () => await store.UpdateParticipantNameAsync(sessionId, Context.ConnectionId, name));
+
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantNameUpdated(Context.ConnectionId, name);
     }
 }
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed

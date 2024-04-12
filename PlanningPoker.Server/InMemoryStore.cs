@@ -23,7 +23,7 @@ public class InMemoryStore : IStore
         {
             newGuid = Guid.NewGuid();
         }
-        while (!_sessions.ContainsKey(newGuid));
+        while (_sessions.ContainsKey(newGuid));
 
         _sessions.Add(newGuid, new(title, [], State.Hidden));
 

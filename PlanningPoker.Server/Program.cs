@@ -21,7 +21,7 @@ if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } p
 
 var signalRBuilder = builder.Services.AddSignalR();
 
-if (builder.Configuration.GetConnectionString("Redis") is string redisConnectionString)
+if (builder.Configuration.GetConnectionString("Redis") is string redisConnectionString && !string.IsNullOrEmpty(redisConnectionString))
 {
     builder.Services.AddSingleton<IConnectionMultiplexer>(await ConnectionMultiplexer.ConnectAsync(redisConnectionString));
     builder.Services.AddTransient(s => s.GetRequiredService<IConnectionMultiplexer>().GetDatabase());

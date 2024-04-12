@@ -115,18 +115,22 @@ h1.font-cursive {
 .session {
     display: grid;
     height: 100%;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr;
     grid-template-rows: auto 1fr auto;
     grid-template-areas:
-        "top-left header top-right"
-        ". main ."
-        "bottom-left footer bottom-right";
+        "header"
+        "main"
+        "footer";
     justify-items: center;
     align-items: center;
 }
 
 button ion-icon {
     margin-bottom: -2px;
+}
+
+a ion-icon {
+    margin-bottom: -3px;
 }
 
 button.hidden-icon ion-icon {
@@ -138,12 +142,13 @@ button.hidden-icon:hover ion-icon {
 }
 
 .btn-square {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     padding: 0;
+    padding-left: 1px;
 
     ion-icon {
-        margin-top: 6px;
+        margin-top: 5px;
         font-size: 14pt;
     }
 }
@@ -224,4 +229,11 @@ button.hidden-icon:hover ion-icon {
     justify-content: center;
     align-items: center;
     z-index: 20;
+}
+
+.caret-off::before {
+    display: none;
+}
+.caret-off::after {
+    display: none;
 }

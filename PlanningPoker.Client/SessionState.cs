@@ -35,9 +35,12 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public IEnumerable<Participant> Others =>
         Session?.Participants?.Where(p => p.ParticipantId != _participantId) ?? [];
 
-    public IEnumerable<string> Options { get; init; } = [ "0.5", "1", "2", "3", "5", "8", "?" ];
+    public IEnumerable<string> Options { get; init; } = [ "0", "0.5", "1", "2", "3", "5", "8", "?" ];
 
     public bool ShowShareNotification { get; private set; }
+
+    public string SessionUrl =>
+        $"https://freeplanningpoker.io/session/{_sessionId}";
 
     #endregion
 
@@ -175,6 +178,11 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task UpdatePointsAsync(string points)
     {
         points = points.Trim();
+
+        if (points == Self?.Points)
+        {
+            points = "";
+        }
 
         await EnsureInitialized();
         Task.Run(async () =>await _server!.UpdateParticipantPointsAsync(_sessionId!.Value, points));

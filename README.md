@@ -16,18 +16,23 @@ The ideal scenario is that you can "clone and go" without much (if any) work, bu
 1. [Fork](https://github.com/IanWold/PlanningPoker/fork) and clone this repo
 2. Download and install the [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 3. I recommend using VSCode with the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit&WT.mc_id=dotnet-35129-website)
-4. You will need access to _some_ deployment of Redis. [Redis' Quick Start docs](https://redis.io/docs/latest/get-started/) can help you here.
-5. Add your Redis connection string in [appsettings](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/appsettings.Development.json):
+
+You should be good to go now - hit F5 and watch it run! By default it will use an in-memory store to keep state. This store is _not_ thread safe; in order to get thread safety (and to allow SignalR to use a backplane) you'll need to provide a connection string for Redis. However, the in-memory store is fast and ideal for local debugging scenarios.
+
+## Running with Redis
+
+1. You will need access to _some_ deployment of Redis. [Redis' Quick Start docs](https://redis.io/docs/latest/get-started/) can help you here.
+2. Add your Redis connection string in [appsettings](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/appsettings.Development.json):
 
 ```json
-    "ConnectionStrings": {
-        "Redis": "<your-connection-string>"
-    }
+"ConnectionStrings": {
+    "Redis": "<your-connection-string>"
+}
 ```
 
-6. From here you should be good to "F5" and get going.
+The application will see your connection string and use the Redis store instead of the in-memory store, and it will use Redis as a backplane for SignalR.
 
-In future I want to look into Docker environments to be able to remove Redis as being a burden. I'd also like to add an in-memory store so that it can be debugged without Redis.
+In future I want to look into Docker environments to be able to remove standing up your own Redis as being a burden.
 
 # Deploying
 
@@ -54,6 +59,8 @@ NIXPACKS_CSHARP_SDK_VERSION=8.0
 
 Now you should be good to go! Railway can [provide a domain name](https://docs.railway.app/guides/public-networking#railway-provided-domain) for your instance of FreePlanningPoker so you can use it.
 
+Note that while you technically can deploy this without Redis, I don't recommend it since the in-memory store is not thread safe. If you want to make it thread safe I'd be more than happy to entertain that PR!
+
 In future I'll be adding some of these settings to a Railway config file in the repo, eliminating the need for a couple of these steps.
 
 # Developing
@@ -66,9 +73,11 @@ The client is a Blazor WASM SPA, the server is ASP and they communicate exclusiv
 
 The SignalR communication is defined by two interfaces in the `PlanningPoker` project: [ISessionHub](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker/ISessionHub.cs) defines client-to-server communication (some of which does require a round trip) and [ISessionHubClient](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker/ISessionHubClient.cs) defines server-to-client communication (none of which requires a round trip; this must be asynchronous communication).
 
-The logic for the server methods is in [SessionHub](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/SessionHub.cs) in the `Server` project. This class contains the logic to read/write to Redis, the _very minimal_ business rules, and the scheme of notifying clients of changes through `ISessionHubClient`. Clients are grouped by session id, and only clients in a session will receive notifications for it. One future goal is to separate the DAL from this class so that a separate in-memory DAL can be implemented for easier local debugging.
+The logic for the server methods is in [SessionHub](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/SessionHub.cs) in the `Server` project. This class contains the _very minimal_ business rules and the scheme of notifying clients of changes through `ISessionHubClient`. Clients are grouped by session id, and only clients in a session will receive notifications for it. One future goal is to separate the DAL from this class so that a separate in-memory DAL can be implemented for easier local debugging.
 
-If you are adding a method on the server for the client to call, you'll update `ISessionHub`, implement the server logic in `SessionHub`, then you'll update the client's `SessionState` to call it (see below). If you're adding a method on the client to call, you'll update `ISessionHubClient`, implement the client logic in `SessionState` (see below), then you'll update the server's `SessionHub` to call down through that method. Everything is strongly-typed by these interfaces on both the client and server, keeping you from needing to using magic strings.
+State is kept by one of the two classes implementing [IStore](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/IStore.cs): either [InMemoryStore](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/InMemoryStore.cs) or [RedisStore](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/RedisStore.cs). The former is used for local debugging scenarios where Redis isn't strictly needed, while the latter is used for production deployments and any networking-related debugging and testing.
+
+If you are adding a method on the server for the client to call, you'll update `ISessionHub`, implement the server logic in `SessionHub` and the store classes, then you'll update the client's `SessionState` to call it (see below). If you're adding a method on the client to call, you'll update `ISessionHubClient`, implement the client logic in `SessionState` (see below), then you'll update the server's `SessionHub` to call down through that method. Everything is strongly-typed by these interfaces on both the client and server, keeping you from needing to using magic strings.
 
 Configuration and dependency injection are all set up in [Program](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/Program.cs); there's really not a lot there.
 

@@ -107,11 +107,11 @@ else
             <div class="circle bg-secondary-subtle" style="--total: @(_state.Session.Participants.Count()); --radius: @(System.Math.Max(_state.Session.Participants.Count() * 25, 125))px;">
                 @if (_state.Session.State == State.Hidden)
                 {
-                    <button class="btn btn-outline-primary border-0" @onclick=_state.RevealAsync><ion-icon name="eye-outline"></ion-icon></button>
+                    <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
                 }
                 else
                 {
-                    <button class="btn btn-outline-primary border-0" @onclick=_state.HideAsync><ion-icon name="sync"></ion-icon></button>
+                    <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Hidden))"><ion-icon name="sync"></ion-icon></button>
                 }
 
                 @for (int i = 0; i < _state.Others.Count(); i++)

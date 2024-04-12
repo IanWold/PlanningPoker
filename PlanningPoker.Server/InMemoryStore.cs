@@ -51,6 +51,17 @@ public class InMemoryStore : IStore
         return Task.FromResult(_sessions.TryGetValue(sessionId, out var session) ? session : null);
     }
 
+    public Task UpdateAllParticipantPointsAsync(Guid sessionId, string points = "")
+    {
+        var session = _sessions[sessionId];
+        
+        _sessions[sessionId] = session with {
+            Participants = session.Participants.Select(p => p with { Points = points}).ToArray()
+        };
+
+        return Task.CompletedTask;
+    }
+
     public Task UpdateParticipantNameAsync(Guid sessionId, string participantId, string name)
     {
         var session = _sessions[sessionId];
@@ -92,11 +103,7 @@ public class InMemoryStore : IStore
         var session = _sessions[sessionId];
         
         _sessions[sessionId] = session with {
-            State = state,
-            Participants =
-                state == State.Hidden
-                ? session.Participants
-                : session.Participants.Select(p => p with { Points = ""}).ToArray()
+            State = state
         };
 
         return Task.CompletedTask;

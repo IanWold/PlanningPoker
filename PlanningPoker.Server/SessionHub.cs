@@ -19,12 +19,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 
     public async Task<Guid> CreateSessionAsync(string title)
     {
-        title = title.Trim();
-
-        if (string.IsNullOrEmpty(title))
-        {
-            throw new ArgumentException($"There must be a title.");
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
 
         var newGuid = await store.CreateSessionAsync(title);
 
@@ -35,7 +30,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 
     public async Task<string> JoinSessionAsync(Guid sessionId, string name)
     {
-        name = name.Trim();
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
         if (!await store.ExistsSessionAsync(sessionId))
         {
@@ -61,14 +56,9 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 
     public async Task UpdateParticipantPointsAsync(Guid sessionId, string points)
     {
-        points = points.Trim();
-
         Task.Run(async () => await store.UpdateParticipantPointsAsync(sessionId, Context.ConnectionId, points));
 
-        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(
-            Context.ConnectionId,
-            points
-        );
+        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(Context.ConnectionId, points);
     }
 
     public async Task UpdateSessionStateAsync(Guid sessionId, State state)
@@ -77,40 +67,28 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 
         if (state == State.Hidden)
         {
-            await Clients.Group(sessionId.ToString()).OnHide();
+            Task.Run(async () => await store.UpdateAllParticipantPointsAsync(sessionId));
         }
-        else
-        {
-            await Clients.Group(sessionId.ToString()).OnReveal();
-        }
+
+        await Clients.Group(sessionId.ToString()).OnStateUpdated(state);
     }
 
     public async Task UpdateSessionTitleAsync(Guid sessionId, string title)
     {
-        title = title.Trim();
+        ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
 
-        if (string.IsNullOrEmpty(title))
-        {
-            throw new ArgumentException($"There must be a title.");
-        }
-
-        Task.Run(async () => store.UpdateSessionTitleAsync(sessionId, title));
+        Task.Run(async () => await store.UpdateSessionTitleAsync(sessionId, title));
         
         await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
     }
 
     public async Task UpdateParticipantNameAsync(Guid sessionId, string name)
     {
-        name = name.Trim();
-
-        if (string.IsNullOrEmpty(name))
-        {
-            throw new ArgumentException($"There must be a title.");
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
         Task.Run(async () => await store.UpdateParticipantNameAsync(sessionId, Context.ConnectionId, name));
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantNameUpdated(Context.ConnectionId, name);
     }
 }
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+#pragma warning restore CS4014

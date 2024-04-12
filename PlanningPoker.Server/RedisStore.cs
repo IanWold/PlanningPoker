@@ -12,7 +12,8 @@ public class RedisStore(IDatabase database) : IStore
             [
                 new HashEntry(nameof(Participant.Name), name),
                 new HashEntry(nameof(Participant.Points), "")
-            ], flags: CommandFlags.FireAndForget
+            ],
+            flags: CommandFlags.FireAndForget
         );
 
         await database.ListRightPushAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
@@ -102,6 +103,12 @@ public class RedisStore(IDatabase database) : IStore
 
         return session;
     }
+    
+    public async Task UpdateAllParticipantPointsAsync(Guid sessionId, string points = "")
+    {
+        var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
+        Parallel.ForEach(participantIds, i => database.HashSet($"{sessionId}:participants:{i}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget));
+    }
 
     public async Task UpdateParticipantNameAsync(Guid sessionId, string participantId, string name)
     {
@@ -116,12 +123,6 @@ public class RedisStore(IDatabase database) : IStore
     public async Task UpdateSessionStateAsync(Guid sessionId, State state)
     {
         await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.State), Enum.GetName(state)) ], flags: CommandFlags.FireAndForget);
-
-        if (state == State.Hidden)
-        {
-            var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
-            Parallel.ForEach(participantIds, i => database.HashSet($"{sessionId}:participants:{i}", [ new HashEntry(nameof(Participant.Points), "") ], flags: CommandFlags.FireAndForget));
-        }
     }
 
     public async Task UpdateSessionTitleAsync(Guid sessionId, string title)

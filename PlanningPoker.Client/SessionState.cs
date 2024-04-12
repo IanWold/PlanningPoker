@@ -4,8 +4,11 @@ using Microsoft.JSInterop;
 
 namespace PlanningPoker.Client;
 
+#pragma warning disable CS4014 // Task.Run fire-and-forget
 public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : ISessionHubClient, IDisposable
 {
+    #region Internal State
+
     private HubConnection? _connection;
 
     private ISessionHub? _server;
@@ -15,6 +18,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     private string? _participantId;
 
     private bool _isUpdateBelayed = false;
+
+    #endregion
+
+    #region Public State
 
     public event EventHandler? OnStateChanged;
 
@@ -28,17 +35,11 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public IEnumerable<Participant> Others =>
         Session?.Participants?.Where(p => p.ParticipantId != _participantId) ?? [];
 
-    public readonly IEnumerable<string> Options = [ "0.5", "1", "2", "3", "5", "8", "?" ];
+    public IEnumerable<string> Options { get; init; } = [ "0.5", "1", "2", "3", "5", "8", "?" ];
 
-    public bool ShowShareNotification { get; set; }
+    public bool ShowShareNotification { get; private set; }
 
-    private void NotifyUpdate()
-    {
-        if (!_isUpdateBelayed)
-        {
-            OnStateChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
+    #endregion
 
     private async Task EnsureInitialized()
     {
@@ -59,32 +60,19 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await _connection.StartAsync();
     }
 
-    public async Task LoadAsync(Guid sessionId)
+    private void NotifyUpdate()
     {
-        _isUpdateBelayed = true;
-
-        await EnsureInitialized();
-
-        if (_sessionId == sessionId)
+        if (!_isUpdateBelayed)
         {
-            _isUpdateBelayed = false;
-            return;
+            OnStateChanged?.Invoke(this, EventArgs.Empty);
         }
-
-        if (_sessionId is not null)
-        {
-            await LeaveAsync();
-        }
-
-        _sessionId = sessionId;
-        Session = await _server!.ConnectToSessionAsync(_sessionId!.Value);
-
-        _isUpdateBelayed = false;
-        NotifyUpdate();
     }
 
     public async Task CreateAsync(string title, string name)
     {
+        title = title.Trim();
+        name = name.Trim();
+
         _isUpdateBelayed = true;
 
         await EnsureInitialized();
@@ -110,37 +98,12 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public async Task JoinAsync(string name)
     {
+        name = name.Trim();
+
         await EnsureInitialized();
         var participantId = await _server!.JoinSessionAsync(_sessionId!.Value, name);
 
         _participantId = participantId;
-
-        NotifyUpdate();
-    }
-
-    public async Task HideAsync()
-    {
-        await EnsureInitialized();
-        Task.Run(async () => await _server!.UpdateSessionStateAsync(_sessionId!.Value, State.Hidden));
-    }
-
-    public async Task RevealAsync()
-    {
-        await EnsureInitialized();
-        Task.Run(async () =>await _server!.UpdateSessionStateAsync(_sessionId!.Value, State.Revealed));
-    }
-
-    public async Task UpdatePointsAsync(string points)
-    {
-        await EnsureInitialized();
-        Task.Run(async () =>await _server!.UpdateParticipantPointsAsync(_sessionId!.Value, points));
-
-        Session = Session! with {
-            Participants = [
-                .. Session!.Participants.Where(p => p.ParticipantId != _participantId),
-                Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Points = points }
-            ]
-        };
 
         NotifyUpdate();
     }
@@ -168,20 +131,34 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task UpdateTitleAsync(string title)
+    public async Task LoadAsync(Guid sessionId)
     {
+        _isUpdateBelayed = true;
+
         await EnsureInitialized();
-        Task.Run(async () => await _server!.UpdateSessionTitleAsync(_sessionId!.Value, title));
 
-        Session = Session! with {
-            Title = title
-        };
+        if (_sessionId == sessionId)
+        {
+            _isUpdateBelayed = false;
+            return;
+        }
 
+        if (_sessionId is not null)
+        {
+            await LeaveAsync();
+        }
+
+        _sessionId = sessionId;
+        Session = await _server!.ConnectToSessionAsync(_sessionId!.Value);
+
+        _isUpdateBelayed = false;
         NotifyUpdate();
     }
 
     public async Task UpdateNameAsync(string name)
     {
+        name = name.Trim();
+
         await EnsureInitialized();
         Task.Run(async () => await _server!.UpdateParticipantNameAsync(_sessionId!.Value, name));
 
@@ -195,17 +172,44 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnHide()
+    public async Task UpdatePointsAsync(string points)
     {
+        points = points.Trim();
+
         await EnsureInitialized();
+        Task.Run(async () =>await _server!.UpdateParticipantPointsAsync(_sessionId!.Value, points));
 
         Session = Session! with {
-            State = State.Hidden,
-            Participants = Session!.Participants.Select(p => p with { Points = "" }).ToList()
+            Participants = [
+                .. Session!.Participants.Where(p => p.ParticipantId != _participantId),
+                Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Points = points }
+            ]
         };
 
         NotifyUpdate();
     }
+
+    public async Task UpdateStateAsync(State state)
+    {
+        await EnsureInitialized();
+        Task.Run(async () => await _server!.UpdateSessionStateAsync(_sessionId!.Value, state));
+    }
+
+    public async Task UpdateTitleAsync(string title)
+    {
+        title = title.Trim();
+
+        await EnsureInitialized();
+        Task.Run(async () => await _server!.UpdateSessionTitleAsync(_sessionId!.Value, title));
+
+        Session = Session! with {
+            Title = title
+        };
+
+        NotifyUpdate();
+    }
+
+    #region ISessionHubClient Implementation
 
     public async Task OnParticipantAdded(string participantId, string name)
     {
@@ -213,6 +217,20 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         Session = Session! with {
             Participants = [.. Session!.Participants, new(participantId, name, "")]
+        };
+
+        NotifyUpdate();
+    }
+
+    public async Task OnParticipantNameUpdated(string participantId, string name)
+    {
+        await EnsureInitialized();
+        
+        Session = Session! with {
+            Participants = [
+                .. Session!.Participants.Where(p => p.ParticipantId != participantId),
+                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = name }
+            ]
         };
 
         NotifyUpdate();
@@ -250,12 +268,16 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnReveal()
+    public async Task OnStateUpdated(State state)
     {
         await EnsureInitialized();
 
         Session = Session! with {
-            State = State.Revealed
+            State = state,
+            Participants = 
+                state == State.Revealed
+                ? Session!.Participants
+                : Session!.Participants.Select(p => p with { Points = "" }).ToList()
         };
 
         NotifyUpdate();
@@ -272,22 +294,11 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnParticipantNameUpdated(string participantId, string name)
-    {
-        await EnsureInitialized();
-        
-        Session = Session! with {
-            Participants = [
-                .. Session!.Participants.Where(p => p.ParticipantId != participantId),
-                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = name }
-            ]
-        };
-
-        NotifyUpdate();
-    }
+    #endregion
 
     void IDisposable.Dispose()
     {
         LeaveAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
 }
+#pragma warning restore CS4014

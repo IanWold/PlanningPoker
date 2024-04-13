@@ -28,6 +28,13 @@
                     <button class="btn btn-primary" type="submit" disabled="@(IsLoading)">Start Planning</button>
                 </div>
             </form>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="alert alert-danger mb-0 mt-3">
+                    <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
+                </div>
+            }
         </div>
     </div>
 
@@ -61,6 +68,8 @@
 
     string Name { get; set; } = string.Empty;
 
+    string? ErrorMessage { get; set; }
+
     bool IsLoading { get; set; }
 
     async Task OnStartPlanningClicked()
@@ -68,9 +77,17 @@
         if (!string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Name))
         {
             IsLoading = true;
+            ErrorMessage = null;
             StateHasChanged();
 
-            await _state.CreateAsync(Title, Name);
+            try
+            {
+                await _state.CreateAsync(Title, Name);
+            }
+            catch
+            {
+                ErrorMessage = "An error occurred while creating your session. Please try again.";
+            }
 
             IsLoading = false;
             StateHasChanged();

@@ -8,12 +8,21 @@
                 <input type="text" class="form-control" placeholder="Enter your name to join the session" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Name>
                 <button class="btn btn-primary" type="submit" disabled="@(IsLoading)">Join</button>
             </form>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="alert alert-danger mb-0 mt-3">
+                    <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
+                </div>
+            }
         </div> </div> </div> </div>
     </div>
 }
 
 @code {
     string Name { get; set; } = string.Empty;
+
+    string? ErrorMessage { get; set; }
 
     bool IsLoading { get; set; }
     
@@ -26,10 +35,18 @@
     {
         if (!string.IsNullOrWhiteSpace(Name))
         {
+            ErrorMessage = null;
             IsLoading = true;
             StateHasChanged();
 
-            await _state.JoinAsync(Name);
+            try
+            {
+                await _state.JoinAsync(Name);
+            }
+            catch
+            {
+                ErrorMessage = "An error occurred while joining the session. Please try again.";
+            }
             
             IsLoading = false;
             StateHasChanged();

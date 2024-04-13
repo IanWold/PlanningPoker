@@ -22,6 +22,13 @@ else
                     <button class="btn border-0 btn-outline-success" type="submit" disabled="@(IsLoading)"><ion-icon name="checkmark-sharp"></ion-icon></button>
                     <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger mb-0 mt-3">
+                        <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
+                    </div>
+                }
             </div> </div> </div> </div>
         </div>
     }
@@ -35,6 +42,13 @@ else
                     <button class="btn border-0 btn-outline-success" type="submit" disabled="@(IsLoading)"><ion-icon name="checkmark-sharp"></ion-icon></button>
                     <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger mb-0 mt-3">
+                        <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
+                    </div>
+                }
             </div> </div> </div> </div>
         </div>
     }
@@ -80,6 +94,8 @@ else
 
     string Name { get; set; } = string.Empty;
 
+    string? ErrorMessage { get; set; }
+
     bool IsEditingTitle { get; set; }
 
     bool IsEditingName { get; set; }
@@ -99,6 +115,7 @@ else
 
     void OnEditTitleClicked()
     {
+        ErrorMessage = null;
         Title = _state.Session.Title;
         IsEditingTitle = true;
         StateHasChanged();
@@ -106,6 +123,7 @@ else
 
     void OnEditNameClicked()
     {
+        ErrorMessage = null;
         Name = _state.Self!.Name;
         IsEditingName = true;
         StateHasChanged();
@@ -113,11 +131,13 @@ else
 
     void OnCloseEditTitleModalClicked()
     {
+        ErrorMessage = null;
         IsEditingTitle = false;
     }
 
     void OnCloseEditNameModalClicked()
     {
+        ErrorMessage = null;
         IsEditingName = false;
     }
 
@@ -125,10 +145,18 @@ else
     {
         if (!string.IsNullOrWhiteSpace(Title))
         {
+            ErrorMessage = null;
             IsLoading = true;
             StateHasChanged();
 
-            await _state.UpdateTitleAsync(Title);
+            try
+            {
+                await _state.UpdateTitleAsync(Title);
+            }
+            catch
+            {
+                ErrorMessage = "An error occurred while updating the title. Please try again.";
+            }
 
             IsEditingTitle = false;
             IsLoading = false;
@@ -140,11 +168,19 @@ else
     {
         if (!string.IsNullOrWhiteSpace(Name))
         {
+            ErrorMessage = null;
             IsLoading = true;
             StateHasChanged();
 
-            await _state.UpdateNameAsync(Name);
-            
+            try
+            {
+                await _state.UpdateNameAsync(Name);
+            }
+            catch
+            {
+                ErrorMessage = "An error occurred while updating your name. Please try again.";
+            }
+
             IsEditingName = false;
             IsLoading = false;
             StateHasChanged();

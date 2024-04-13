@@ -1,6 +1,5 @@
 ﻿@page "/session/{SessionId:guid}"
 @inject SessionState _state
-@inject IJSRuntime _jsRuntime
 
 @using System
 
@@ -12,17 +11,7 @@
 }
 else
 {
-    @if (_state.Self is null && !IsEditingName)
-    {
-        <div class="overlay">
-            <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
-                <form class="d-flex gap-2 w-100" @onsubmit=OnJoinClicked>
-                    <input type="text" class="form-control" placeholder="Enter your name to join the session" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Name>
-                    <button class="btn btn-primary" type="submit">Join</button>
-                </form>
-            </div> </div> </div> </div>
-        </div>
-    }
+    <JoinFormComponent />
 
     @if (IsEditingTitle)
     {
@@ -65,55 +54,11 @@ else
         <AddComponent />
 
         <div style="grid-area: main">
-            <div class="circle bg-secondary-subtle" style="--total: @(_state.Session.Participants.Count()); --radius: @(System.Math.Max(_state.Session.Participants.Count() * 25, 125))px;">
-                @if (_state.Session.State == State.Hidden)
-                {
-                    <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
-                }
-                else
-                {
-                    <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Hidden))"><ion-icon name="sync"></ion-icon></button>
-                }
-
-                @for (int i = 0; i < _state.Others.Count(); i++)
-                {
-                    <div class="stat" style="--i:@(i + 1)">
-                        <label>@_state.Others.ElementAt(i).Name</label>
-
-                        <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                            @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points))
-                            {
-                                <span>@_state.Others.ElementAt(i).Points</span>
-                            }
-                        </div>
-                    </div>
-                }
-                
-                @if (_state.Self is not null)
-                {
-                    <div class="stat" style="--i:@(_state.Session.Participants.Count())">
-                        <label>@_state.Self.Name</label>
-
-                        <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                            @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points))
-                            {
-                                <span>@_state.Self.Points</span>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
+            <CenterTableComponent />
         </div>
 
-        <div class="card m-3 w-auto shadow-sm border-0" style="grid-area: footer; max-width: 600px;">
-            <div class="card-body p-2">
-                <div class="d-flex gap-2 justify-content-between">
-                    @foreach (var option in _state.Options)
-                    {
-                        <button class="btn btn-square @(_state.Self?.Points == option ? "btn-primary" : "btn-outline-primary")" @onclick="@(async () => await _state.UpdatePointsAsync(option))">@option</button>
-                    }
-                </div>
-            </div>
+        <div style="grid-area: footer;">
+            <PointSelectionComponent />
         </div>
 
         <HelpComponent />
@@ -184,14 +129,6 @@ else
             await _state.UpdateNameAsync(Name);
             IsEditingName = false;
             StateHasChanged();
-        }
-    }
-
-    async Task OnJoinClicked()
-    {
-        if (!string.IsNullOrWhiteSpace(Name))
-        {
-            await _state.JoinAsync(Name);
         }
     }
 }

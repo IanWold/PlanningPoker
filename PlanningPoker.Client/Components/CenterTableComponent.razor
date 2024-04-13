@@ -1,0 +1,47 @@
+﻿@inject SessionState _state
+
+<div class="circle bg-secondary-subtle" style="--total: @(_state.Session.Participants.Count()); --radius: @(System.Math.Max(_state.Session.Participants.Count() * 25, 125))px;">
+    @if (_state.Session.State == State.Hidden)
+    {
+        <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
+    }
+    else
+    {
+        <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Hidden))"><ion-icon name="sync"></ion-icon></button>
+    }
+
+    @for (int i = 0; i < _state.Others.Count(); i++)
+    {
+        <div class="stat" style="--i:@(i + 1)">
+            <label>@_state.Others.ElementAt(i).Name</label>
+
+            <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
+                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points))
+                {
+                    <span>@_state.Others.ElementAt(i).Points</span>
+                }
+            </div>
+        </div>
+    }
+    
+    @if (_state.Self is not null)
+    {
+        <div class="stat" style="--i:@(_state.Session.Participants.Count())">
+            <label>@_state.Self.Name</label>
+
+            <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
+                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points))
+                {
+                    <span>@_state.Self.Points</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        _state.OnStateChanged += (o, e) => StateHasChanged();
+    }
+}

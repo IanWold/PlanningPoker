@@ -93,15 +93,13 @@ All entries associated with a session are removed from Redis when the last parti
 
 ## Client
 
-There's only two files that do the majority of the heavy lifting: [SessionState](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client/SessionState.cs) and [SessionPage](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client/Pages/SessionPage.razor). It's at the point that `SessionPage` does need to be split out into components, but as it stands each file is around 200 lines and not terribly complicated.
-
-The `SessionState` class keeps the state for the user and their session, and handles commands from the UI and notifications from the server which mutate state. As such, it also maintains the SignalR connection and the navigation in the app (this is trivial, that's just moving from the homepage to the session on creation). When the state mutates, the `OnStateChanged` event is raised.
+There's two main files to care about: [SessionState](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client/SessionState.cs) and [SessionPage](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client/Pages/SessionPage.razor). The `SessionState` class keeps the state for the user and their session, and handles commands from the UI and notifications from the server which mutate state. As such, it also maintains the SignalR connection and the navigation in the app (this is trivial, that's just moving from the homepage to the session on creation). When the state mutates, the `OnStateChanged` event is raised.
 
 `SessionState` implements `ISessionHubClient` and keeps an instance of `ISessionHub`, which fulfil the SignalR communication requirements. These are set up in `EnsureInitialized`, and torn down in `LeaveAsync`. Note that `EnsureInitialized` uses some [fancy source generation](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client/HubConnectionExtensions.cs) - the [package for this](https://github.com/dotnet/aspnetcore/tree/main/src/SignalR/clients/csharp/Client.SourceGenerator/src) _is_ from Microsoft, though it's undocumented and hasn't been updated in two years. If you dig enough online, you'll find [Kristoffer Strube's post](https://kristoffer-strube.dk/post/typed-signalr-clients-making-type-safe-real-time-communication-in-dotnet/) about them. When adding server functionality, this is the only file you need to change unles the functionality you're adding requires new UI components.
 
 `SessionPage` is the user interface for almost the entire application. The user will first create a session on the homepage (`Index.razor`) but then all the work in the session is done on this page. This page listens to the `OnStateChanged` event from the state and calls `StateHasChanged` on itself when it receives that event. This is a potential area for improvement - these could be broken into components to perform more granular updates. As it stands, this is a very small application and having one page is, in its own way, easy. Probably time to start breaking it up though.
 
-`SessionPage` maintains a small amount of state for its UI components - there are modals which need to show or hide depending on user interaction, and that is kept in the `@code` block. I've intentionally tried to minimize this for simplicity.
+There are several components for individual UI elements in the `Components` folder. These are all referenced from `SessionPage`.
 
 # Contributing
 

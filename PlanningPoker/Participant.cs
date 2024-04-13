@@ -3,5 +3,6 @@
 public record Participant(
     string ParticipantId,
     string Name,
-    string Points
+    string Points,
+    int Stars
 );

@@ -54,6 +54,13 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
     }
 
+    public async Task SendStarToParticipantAsync(Guid sessionId, string participantId)
+    {
+        Task.Run(async () => await store.IncrementParticipantStarsAsync(sessionId, participantId));
+
+        await Clients.Group(sessionId.ToString()).OnStarSentToParticipant(participantId);
+    }
+
     public async Task UpdateParticipantPointsAsync(Guid sessionId, string points)
     {
         Task.Run(async () => await store.UpdateParticipantPointsAsync(sessionId, Context.ConnectionId, points));

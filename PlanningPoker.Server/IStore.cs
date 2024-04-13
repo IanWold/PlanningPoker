@@ -7,6 +7,7 @@ public interface IStore
     Task DeleteParticipantAsync(Guid sessionId, string participantId);
     Task<bool> ExistsSessionAsync(Guid sessionId);
     Task<Session?> GetSessionAsync(Guid sessionId);
+    Task IncrementParticipantStarsAsync(Guid sessionId, string participantId, int count = 1);
     Task UpdateAllParticipantPointsAsync(Guid sessionId, string points = "");
     Task UpdateParticipantNameAsync(Guid sessionId, string participantId, string name);
     Task UpdateParticipantPointsAsync(Guid sessionId, string participantId, string points);

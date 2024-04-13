@@ -158,6 +158,12 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
+    public async Task SendStarToParticipantAsync(string participantId)
+    {
+        await EnsureInitialized();
+        Task.Run(async () => await _server!.SendStarToParticipantAsync(_sessionId!.Value, participantId));
+    }
+
     public async Task UpdateNameAsync(string name)
     {
         name = name.Trim();
@@ -224,7 +230,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Participants = [.. Session!.Participants, new(participantId, name, "")]
+            Participants = [.. Session!.Participants, new(participantId, name, "", 0)]
         };
 
         NotifyUpdate();
@@ -270,6 +276,24 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             Participants =
                 Session!.Participants
                 .Where(p => p.ParticipantId != participantId)
+                .ToList()
+        };
+
+        NotifyUpdate();
+    }
+
+    public async Task OnStarSentToParticipant(string participantId)
+    {
+        await EnsureInitialized();
+
+        Session = Session! with {
+            Participants =
+                Session!.Participants
+                .Select(p =>
+                    p.ParticipantId == participantId
+                        ? p with { Stars = p.Stars + 1 }
+                        : p
+                )
                 .ToList()
         };
 

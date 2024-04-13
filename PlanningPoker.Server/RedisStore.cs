@@ -11,7 +11,8 @@ public class RedisStore(IDatabase database) : IStore
             $"{sessionId}:participants:{participantId}",
             [
                 new HashEntry(nameof(Participant.Name), name),
-                new HashEntry(nameof(Participant.Points), "")
+                new HashEntry(nameof(Participant.Points), ""),
+                new HashEntry(nameof(Participant.Stars), 0)
             ],
             flags: CommandFlags.FireAndForget
         );
@@ -88,7 +89,8 @@ public class RedisStore(IDatabase database) : IStore
                         participants.Add(new(
                             i!,
                             p.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
-                            p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!
+                            p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!,
+                            (int)p.Result.Single(h => h.Name == nameof(Participant.Stars)).Value
                         ))
                     )
             )
@@ -103,7 +105,12 @@ public class RedisStore(IDatabase database) : IStore
 
         return session;
     }
-    
+
+    public async Task IncrementParticipantStarsAsync(Guid sessionId, string participantId, int count = 1)
+    {
+        await database.HashIncrementAsync($"{sessionId}:participants:{participantId}", nameof(Participant.Stars), count, flags: CommandFlags.FireAndForget);
+    }
+
     public async Task UpdateAllParticipantPointsAsync(Guid sessionId, string points = "")
     {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");

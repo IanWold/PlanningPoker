@@ -9,7 +9,7 @@ public class InMemoryStore : IStore
         var session = _sessions[sessionId];
         
         _sessions[sessionId] = session with {
-            Participants = [..session.Participants, new(participantId, name, "") ]
+            Participants = [..session.Participants, new(participantId, name, "", 0) ]
         };
 
         return Task.CompletedTask;
@@ -49,6 +49,24 @@ public class InMemoryStore : IStore
     public Task<Session?> GetSessionAsync(Guid sessionId)
     {
         return Task.FromResult(_sessions.TryGetValue(sessionId, out var session) ? session : null);
+    }
+
+    public Task IncrementParticipantStarsAsync(Guid sessionId, string participantId, int count = 1)
+    {
+        var session = _sessions[sessionId];
+        
+        _sessions[sessionId] = session with {
+            Participants =
+                session.Participants
+                .Select(p =>
+                    p.ParticipantId == participantId
+                    ? p with { Stars = p.Stars + count }
+                    : p
+                )
+                .ToArray()
+        };
+
+        return Task.CompletedTask;
     }
 
     public Task UpdateAllParticipantPointsAsync(Guid sessionId, string points = "")

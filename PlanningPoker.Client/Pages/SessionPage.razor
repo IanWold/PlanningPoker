@@ -53,6 +53,13 @@ else
         
         <AddComponent />
 
+        @if (_state.Session.State == State.Revealed)
+        {
+            <div style="grid-area: main">
+                <GraphComponent />
+            </div>
+        }
+
         <div style="grid-area: main">
             <CenterTableComponent />
         </div>

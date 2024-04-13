@@ -1,0 +1,28 @@
+﻿@inject SessionState _state
+
+<div class="d-flex gap-2" style="width: 600px; margin-top: 66vh;">
+    @foreach (var (count, points) in PointData)
+    {
+        <div class="card w-auto py-2 px-3 border-0 rounded-pill shadow @(count == WinningPointsCount ? (IsWinningPointsTied ? "text-bg-secondary" : "text-bg-success") : "")" style="flex-grow: @count;"><div class="card-body p-0 text-center fw-bold">@points</div></div>
+    }
+</div>
+
+@code {
+    IEnumerable<(int count, string points)> PointData =>
+        _state.Session.Participants
+            .Where(p => !string.IsNullOrWhiteSpace(p.Points))
+            .GroupBy(p => p.Points)
+            .Select(g => (count: g.Count(), points: g.Key))
+            .OrderBy(p => p.points);
+
+    int WinningPointsCount =>
+        PointData.OrderByDescending(p => p.count).FirstOrDefault().count;
+
+    bool IsWinningPointsTied =>
+        PointData.Where(p => p.count == WinningPointsCount).Count() > 1;
+
+    protected override void OnInitialized()
+    {
+        _state.OnStateChanged += (o, e) => StateHasChanged();
+    }
+}

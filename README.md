@@ -81,6 +81,16 @@ If you are adding a method on the server for the client to call, you'll update `
 
 Configuration and dependency injection are all set up in [Program](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Server/Program.cs); there's really not a lot there.
 
+## Redis
+
+Session data is stored in Redis across several keys to eliminate or minimize race conditions. The keys and their values are:
+
+* `{sessionId}` (guid): Hash with values "Title" and "State".
+* `{sessionId}:participants`: List with values being the IDs of the participants in the session.
+* `{sessionId}:participants:{participantId}`: Hash with values "Name" and "Points".
+
+All entries associated with a session are removed from Redis when the last participant leaves the session.
+
 ## Client
 
 There's only two files that do the majority of the heavy lifting: [SessionState](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client/SessionState.cs) and [SessionPage](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client/Pages/SessionPage.razor). It's at the point that `SessionPage` does need to be split out into components, but as it stands each file is around 200 lines and not terribly complicated.

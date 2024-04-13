@@ -17,17 +17,17 @@
 
     <div class="card shadow border-0">
         <div class="card-body">
-            <div class="d-flex gap-2">
+            <form class="d-flex gap-2">
                 <div class="flex-fill">
-                    <input type="text" class="form-control" placeholder="Session Title" @bind-value=Title>
+                    <input type="text" class="form-control" placeholder="Session Title" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Title>
                 </div>
                 <div class="flex-fill">
-                    <input type="text" class="form-control" placeholder="Your Name" @bind-value=Name>
+                    <input type="text" class="form-control" placeholder="Your Name" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Name>
                 </div>
                 <div class="">
-                    <button class="btn btn-primary" @onclick="@(async () => await _state.CreateAsync(Title, Name))">Start Planning</button>
+                    <button class="btn btn-primary" type="submit" @onclick=OnStartPlanningClicked>Start Planning</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -60,4 +60,12 @@
     string Title { get; set; } = string.Empty;
 
     string Name { get; set; } = string.Empty;
+
+    async Task OnStartPlanningClicked()
+    {
+        if (!string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Name))
+        {
+            await _state.CreateAsync(Title, Name);
+        }
+    }
 }

@@ -17,8 +17,8 @@ else
         <div class="overlay">
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <div class="d-flex gap-2 w-100">
-                    <input type="text" class="form-control" placeholder="Enter your name to join the session" @bind-value=Name>
-                    <button class="btn btn-primary" @onclick="@(async () => await _state.JoinAsync(Name))">Join</button>
+                    <input type="text" class="form-control" placeholder="Enter your name to join the session" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Name>
+                    <button class="btn btn-primary" @onclick=OnJoinClicked>Join</button>
                 </div>
             </div> </div> </div> </div>
         </div>
@@ -29,7 +29,7 @@ else
         <div class="overlay">
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <div class="d-flex gap-2 w-100">
-                    <input type="text" class="form-control" placeholder="Enter a title for the session" @bind-value=Title>
+                    <input type="text" class="form-control" placeholder="Enter a title for the session" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Title>
                     <button class="btn border-0 btn-outline-success" @onclick=OnSaveTitleClicked><ion-icon name="checkmark-sharp"></ion-icon></button>
                     <button class="btn border-0 btn-outline-secondary" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </div>
@@ -42,7 +42,7 @@ else
         <div class="overlay">
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <div class="d-flex gap-2 w-100">
-                    <input type="text" class="form-control" placeholder="Enter your name" @bind-value=Name>
+                    <input type="text" class="form-control" placeholder="Enter your name" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Name>
                     <button class="btn border-0 btn-outline-success" @onclick=OnSaveNameClicked><ion-icon name="checkmark-sharp"></ion-icon></button>
                     <button class="btn border-0 btn-outline-secondary" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </div>
@@ -246,15 +246,29 @@ else
 
     async Task OnSaveTitleClicked()
     {
-        await _state.UpdateTitleAsync(Title);
-        IsEditingTitle = false;
-        StateHasChanged();
+        if (!string.IsNullOrWhiteSpace(Title))
+        {
+            await _state.UpdateTitleAsync(Title);
+            IsEditingTitle = false;
+            StateHasChanged();
+        }
     }
 
     async Task OnSaveNameClicked()
     {
-        await _state.UpdateNameAsync(Name);
-        IsEditingName = false;
-        StateHasChanged();
+        if (!string.IsNullOrWhiteSpace(Name))
+        {
+            await _state.UpdateNameAsync(Name);
+            IsEditingName = false;
+            StateHasChanged();
+        }
+    }
+
+    async Task OnJoinClicked()
+    {
+        if (!string.IsNullOrWhiteSpace(Name))
+        {
+            await _state.JoinAsync(Name));
+        }
     }
 }

@@ -105,4 +105,6 @@ There are several components for individual UI elements in the `Components` fold
 
 Please do! I think the above gives a fair quick overview of the project structure and how to add some features. I've got several [good first issues](https://github.com/IanWold/PlanningPoker/issues) and I'm always happy to discuss suggestions for what to include, modify, etc.
 
+If you would like to champion an issue, please leave a comment saying you'd like to - I'll assign the issue to you and I'll be happy to clarify any questions.
+
 I don't have formal code standards on this proejct yet; it's quite small and young. I ask that your code be kept minimal, tidy, and in-keeping with the code that's already here. In future as the application solidifies then a more defined coding and architectural standard will probably emerge - I find that a codebase will generally reveal its own standards over time and I prefer allowing that process rather than imposing a (probably wrong) idea on the codebase from the start.

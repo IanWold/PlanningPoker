@@ -237,3 +237,22 @@ button.hidden-icon:hover ion-icon {
 .caret-off::after {
     display: none;
 }
+
+button:disabled, button[disabled] {
+    background-image: 
+      repeating-linear-gradient(
+        -45deg, 
+        rgba(0,0,0,.25), 
+        rgba(0,0,0,.25) 1rem,
+        rgba(0,0,0,.5) 1rem,
+        rgba(0,0,0,.5) 2rem
+      );
+    background-size: 200% 200%;
+    animation: barberpole 5s linear infinite;
+  }
+  
+@keyframes barberpole {
+    100% {
+        background-position: 100% 100%;
+    }
+}

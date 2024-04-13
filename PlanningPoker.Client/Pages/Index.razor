@@ -19,13 +19,13 @@
         <div class="card-body">
             <form class="d-flex gap-2" @onsubmit=OnStartPlanningClicked>
                 <div class="flex-fill">
-                    <input type="text" class="form-control" placeholder="Session Title" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Title>
+                    <input type="text" class="form-control" placeholder="Session Title" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Title>
                 </div>
                 <div class="flex-fill">
-                    <input type="text" class="form-control" placeholder="Your Name" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Name>
+                    <input type="text" class="form-control" placeholder="Your Name" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Name>
                 </div>
                 <div class="">
-                    <button class="btn btn-primary" type="submit">Start Planning</button>
+                    <button class="btn btn-primary" type="submit" disabled="@(IsLoading)">Start Planning</button>
                 </div>
             </form>
         </div>
@@ -61,11 +61,19 @@
 
     string Name { get; set; } = string.Empty;
 
+    bool IsLoading { get; set; }
+
     async Task OnStartPlanningClicked()
     {
         if (!string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Name))
         {
+            IsLoading = true;
+            StateHasChanged();
+
             await _state.CreateAsync(Title, Name);
+
+            IsLoading = false;
+            StateHasChanged();
         }
     }
 }

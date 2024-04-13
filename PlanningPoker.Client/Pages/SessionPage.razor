@@ -19,8 +19,8 @@ else
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <form class="d-flex gap-2 w-100" @onsubmit=OnSaveTitleClicked>
                     <input type="text" class="form-control" placeholder="Enter a title for the session" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Title>
-                    <button class="btn border-0 btn-outline-success" type="submit"><ion-icon name="checkmark-sharp"></ion-icon></button>
-                    <button class="btn border-0 btn-outline-secondary" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-success" type="submit" disabled="@(IsLoading)"><ion-icon name="checkmark-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
             </div> </div> </div> </div>
         </div>
@@ -32,8 +32,8 @@ else
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <form class="d-flex gap-2 w-100" @onsubmit=OnSaveNameClicked>
                     <input type="text" class="form-control" placeholder="Enter your name" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Name>
-                    <button class="btn border-0 btn-outline-success" type="submit"><ion-icon name="checkmark-sharp"></ion-icon></button>
-                    <button class="btn border-0 btn-outline-secondary" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-success" type="submit" disabled="@(IsLoading)"><ion-icon name="checkmark-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
             </div> </div> </div> </div>
         </div>
@@ -45,8 +45,8 @@ else
         <div class="card m-3 shadow-sm border-0" style="grid-area: header; width: 600px;">
             <div class="card-body p-2">
                 <div class="d-flex gap-2 w-100 justify-content-between">
-                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon fw-bold" @onclick=OnEditTitleClicked>@_state.Session.Title <ion-icon name="settings-sharp"></ion-icon></button>
-                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon" @onclick=OnEditNameClicked><ion-icon name="person-sharp"></ion-icon> @_state.Self?.Name</button>
+                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon fw-bold" disabled="@(IsLoading)" @onclick=OnEditTitleClicked>@_state.Session.Title <ion-icon name="settings-sharp"></ion-icon></button>
+                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon" disabled="@(IsLoading)" @onclick=OnEditNameClicked><ion-icon name="person-sharp"></ion-icon> @_state.Self?.Name</button>
                 </div>
             </div>
         </div>
@@ -83,6 +83,8 @@ else
     bool IsEditingTitle { get; set; }
 
     bool IsEditingName { get; set; }
+
+    bool IsLoading { get; set; }
 
     bool IsContentBlurred =>
         _state.Self is null
@@ -123,8 +125,13 @@ else
     {
         if (!string.IsNullOrWhiteSpace(Title))
         {
+            IsLoading = true;
+            StateHasChanged();
+
             await _state.UpdateTitleAsync(Title);
+
             IsEditingTitle = false;
+            IsLoading = false;
             StateHasChanged();
         }
     }
@@ -133,8 +140,13 @@ else
     {
         if (!string.IsNullOrWhiteSpace(Name))
         {
+            IsLoading = true;
+            StateHasChanged();
+
             await _state.UpdateNameAsync(Name);
+            
             IsEditingName = false;
+            IsLoading = false;
             StateHasChanged();
         }
     }

@@ -1,0 +1,51 @@
+﻿@inject SessionState _state
+
+@if (_state.ShowShareNotification)
+{
+    <div style="position: absolute; left: 142px; top: 0; z-index: 10; display: flex;">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 474.3779255537628 132.10090279767292" width="474.3779255537628" height="132.10090279767292">
+            <!-- svg-source:excalidraw -->
+            <defs>
+                <style class="style-fonts">
+                    @@font-face {
+                        font-family: "Virgil";
+                        src: url("https://excalidraw.com/Virgil.woff2");
+                    }
+                    @@font-face {
+                        font-family: "Cascadia";
+                        src: url("https://excalidraw.com/Cascadia.woff2");
+                    }
+                    @@font-face {
+                        font-family: "Assistant";
+                        src: url("https://excalidraw.com/Assistant-Regular.woff2");
+                    }
+                </style>
+            </defs>
+            <g transform="translate(126.63824049516904 97.10090279767292) rotate(0 168.86984252929688 12.5)">
+                <text x="0" y="17.52" font-family="Virgil, Segoe UI Emoji" font-size="20px" fill="#1e1e1e" text-anchor="start" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">Copy this link to your participants</text>
+            </g>
+            <g stroke-linecap="round">
+                <g transform="translate(113.63824049516904 110.10090279767292) rotate(0 -50 -49.5)">
+                    <path d="M0.27 -1.02 C-16.39 -0.8, -84.95 16.39, -99.28 0.19 C-113.61 -16, -88.24 -81.48, -85.72 -98.19 M-1.05 1.05 C-17.87 0.99, -86.15 15.03, -99.85 -1.83 C-113.54 -18.69, -85.93 -83.82, -83.2 -100.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path>
+                </g>
+                <g transform="translate(113.63824049516904 110.10090279767292) rotate(0 -50 -49.5)">
+                    <path d="M-81.6 -75.15 C-83.64 -82.9, -82.19 -94.26, -83.2 -100.1 M-81.6 -75.15 C-82.12 -85.34, -83.18 -94.46, -83.2 -100.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path>
+                </g>
+                <g transform="translate(113.63824049516904 110.10090279767292) rotate(0 -50 -49.5)">
+                    <path d="M-98.01 -79.96 C-94.21 -86.02, -86.87 -95.66, -83.2 -100.1 M-98.01 -79.96 C-92.46 -88.23, -87.48 -95.59, -83.2 -100.1" stroke="#1e1e1e" stroke-width="2" fill="none"></path>
+                </g>
+            </g>
+            <mask></mask>
+        </svg>
+        <div>
+            <button class="btn-close" style="margin-top: 98px;" @onclick=_state.HideShareNotification></button>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        _state.OnStateChanged += (o, e) => StateHasChanged();
+    }
+}

@@ -12,8 +12,16 @@
 
     @for (int i = 0; i < _state.Others.Count(); i++)
     {
-        <div class="stat" style="--i:@(i + 1)">
-            <label>@_state.Others.ElementAt(i).Name</label>
+        var participantId = _state.Others.ElementAt(i).ParticipantId;
+
+        <div class="stat" id="@(participantId)" style="--i:@(i + 1)">
+            <label>
+                @(_state.Others.ElementAt(i).Name)
+                @if (_state.Others.ElementAt(i).Stars > 0)
+                {
+                    <span>⭐ @(_state.Others.ElementAt(i).Stars)</span>
+                }
+            </label>
 
             <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
                 @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points))
@@ -21,13 +29,23 @@
                     <span>@_state.Others.ElementAt(i).Points</span>
                 }
             </div>
+
+            <div class="btn-option btn-like">
+                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(async () => await _state.SendStarToParticipantAsync(participantId))"><ion-icon name="star-sharp"></ion-icon></button>
+            </div>
         </div>
     }
     
     @if (_state.Self is not null)
     {
-        <div class="stat" style="--i:@(_state.Session.Participants.Count())">
-            <label>@_state.Self.Name</label>
+        <div class="stat" style="--i:@(_state.Session.Participants.Count())" id="@(_state.Self.ParticipantId)">
+            <label>
+                @(_state.Self.Name)
+                @if (_state.Self.Stars > 0)
+                {
+                    <span>⭐ @(_state.Self.Stars)</span>
+                }
+            </label>
 
             <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
                 @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points))

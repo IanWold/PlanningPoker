@@ -162,7 +162,7 @@ button.hidden-icon:hover ion-icon {
     width: calc(2 * var(--radius));
     height: calc(2 * var(--radius));
 
-    button {
+    >button {
         grid-area: layer;
         border-radius: 50%;
 
@@ -216,6 +216,28 @@ button.hidden-icon:hover ion-icon {
             font-size: 14pt;
         }
     }
+
+    .btn-option {
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        background-color: white;
+        margin-top: -16px;
+
+        display: none;
+
+        button.btn-sm {
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+
+            padding-top: 3px;
+        }
+    }
+}
+
+.stat:hover .btn-option {
+    display: block;
 }
 
 .overlay {
@@ -255,4 +277,20 @@ button:disabled, button[disabled] {
     100% {
         background-position: 100% 100%;
     }
+}
+
+@keyframes floatAndFade {
+    0% {
+        transform: translateY(0px);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-50px); /* Adjust distance as needed */
+        opacity: 0;
+    }
+}
+
+.star {
+    position: absolute;
+    animation: floatAndFade 2s ease-out forwards; /* Adjust timing as needed */
 }

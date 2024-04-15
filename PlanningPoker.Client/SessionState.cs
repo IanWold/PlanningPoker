@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using DataJuggler.Cryptography;
 
 namespace PlanningPoker.Client;
 
@@ -18,6 +19,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     private string? _participantId;
 
     private bool _isUpdateBelayed = false;
+
+    private string? _encryptionKey;
 
     #endregion
 
@@ -40,9 +43,15 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public bool ShowShareNotification { get; private set; }
 
     public string SessionUrl =>
-        $"https://freeplanningpoker.io/session/{_sessionId}";
+        $"https://freeplanningpoker.io/session/{_sessionId}#key={_encryptionKey}";
 
     #endregion
+
+    private string Decrypt(string toDecrypt) =>
+        CryptographyHelper.DecryptString(toDecrypt, _encryptionKey);
+
+    private string Encrypt(string toEncrypt) =>
+        CryptographyHelper.EncryptString(toEncrypt, _encryptionKey);
 
     private async Task EnsureInitialized()
     {
@@ -79,8 +88,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         _isUpdateBelayed = true;
 
         await EnsureInitialized();
+
+        _encryptionKey = Guid.NewGuid().ToString().Split('-').First();
         
-        _sessionId = await _server!.CreateSessionAsync(title);
+        _sessionId = await _server!.CreateSessionAsync(Encrypt(title));
         Session = new(title, [], State.Hidden);
         ShowShareNotification = true;
 
@@ -90,7 +101,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         NotifyUpdate();
 
-        navigationManager.NavigateTo($"/session/{_sessionId}");
+        navigationManager.NavigateTo($"/session/{_sessionId}#key={_encryptionKey}");
     }
 
     public void HideShareNotification()
@@ -104,7 +115,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         name = name.Trim();
 
         await EnsureInitialized();
-        var participantId = await _server!.JoinSessionAsync(_sessionId!.Value, name);
+        var participantId = await _server!.JoinSessionAsync(_sessionId!.Value, Encrypt(name));
 
         _participantId = participantId;
 
@@ -134,7 +145,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task LoadAsync(Guid sessionId)
+    public async Task LoadAsync(Guid sessionId, string encryptionKey)
     {
         _isUpdateBelayed = true;
 
@@ -152,7 +163,14 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
 
         _sessionId = sessionId;
-        Session = await _server!.ConnectToSessionAsync(_sessionId!.Value);
+        _encryptionKey = encryptionKey;
+        
+        var encryptedSession = await _server!.ConnectToSessionAsync(_sessionId!.Value);
+        Session = encryptedSession with
+        {
+            Title = Decrypt(encryptedSession.Title),
+            Participants = encryptedSession.Participants.Select(p => p with { Name = Decrypt(p.Name) }).ToArray()
+        };
 
         _isUpdateBelayed = false;
         NotifyUpdate();
@@ -169,7 +187,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         name = name.Trim();
 
         await EnsureInitialized();
-        Task.Run(async () => await _server!.UpdateParticipantNameAsync(_sessionId!.Value, name));
+        Task.Run(async () => await _server!.UpdateParticipantNameAsync(_sessionId!.Value, Encrypt(name)));
 
         Session = Session! with {
             Participants = [
@@ -214,7 +232,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         title = title.Trim();
 
         await EnsureInitialized();
-        Task.Run(async () => await _server!.UpdateSessionTitleAsync(_sessionId!.Value, title));
+        Task.Run(async () => await _server!.UpdateSessionTitleAsync(_sessionId!.Value, Encrypt(title)));
 
         Session = Session! with {
             Title = title
@@ -230,7 +248,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Participants = [.. Session!.Participants, new(participantId, name, "", 0)]
+            Participants = [.. Session!.Participants, new(participantId, Decrypt(name), "", 0)]
         };
 
         NotifyUpdate();
@@ -243,7 +261,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         Session = Session! with {
             Participants = [
                 .. Session!.Participants.Where(p => p.ParticipantId != participantId),
-                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = name }
+                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = Decrypt(name) }
             ]
         };
 
@@ -320,7 +338,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Title = title
+            Title = Decrypt(title)
         };
 
         NotifyUpdate();

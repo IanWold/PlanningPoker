@@ -2,13 +2,13 @@
 
 public interface ISessionHub
 {
-    Task<Session> ConnectToSessionAsync(Guid sessionId);
-    Task<Guid> CreateSessionAsync(string title);
-    Task<string> JoinSessionAsync(Guid sessionId, string name);
-    Task DisconnectFromSessionAsync(Guid sessionId);
-    Task SendStarToParticipantAsync(Guid sessionId, string participantId);
-    Task UpdateParticipantPointsAsync(Guid sessionId, string points);
-    Task UpdateSessionStateAsync(Guid sessionId, State state);
-    Task UpdateSessionTitleAsync(Guid sessionId, string title);
-    Task UpdateParticipantNameAsync(Guid sessionId, string name);
+    Task<Session> ConnectToSessionAsync(string sessionId);
+    Task<string> CreateSessionAsync(string title);
+    Task<string> JoinSessionAsync(string sessionId, string name);
+    Task DisconnectFromSessionAsync(string sessionId);
+    Task SendStarToParticipantAsync(string sessionId, string participantId);
+    Task UpdateParticipantPointsAsync(string sessionId, string points);
+    Task UpdateSessionStateAsync(string sessionId, State state);
+    Task UpdateSessionTitleAsync(string sessionId, string title);
+    Task UpdateParticipantNameAsync(string sessionId, string name);
 }

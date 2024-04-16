@@ -7,7 +7,7 @@
     </button>
     <div class="dropdown-menu dropdown-menu-end mt-3 shadow border-0">
         <h6 class="dropdown-header"><ion-icon name="person-add-sharp" style="margin-bottom: -2px;"></ion-icon> Invite a participant</h6>
-        <div class="input-group px-3 pb-2" style="width: 650px;">
+        <div class="input-group px-3 pb-2" style="width: 675px;">
             <input type="email" class="form-control" disabled value="@(_state.SessionUrl)">
             <button class="btn btn-outline-secondary" type="button" @onclick="@(async () => await _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _state.SessionUrl))"><ion-icon name="clipboard-sharp"></ion-icon></button>
         </div>

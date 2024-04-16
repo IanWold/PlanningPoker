@@ -1,4 +1,4 @@
-﻿@page "/session/{SessionId:guid}"
+﻿@page "/session/{SessionId}"
 @inject SessionState _state
 @inject NavigationManager _navigationManager
 
@@ -89,7 +89,7 @@ else
 
 @code {
     [Parameter]
-    public Guid SessionId { get; set; }
+    public string SessionId { get; set; }
 
     string Title { get; set; } = string.Empty;
 
@@ -111,14 +111,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         _state.OnStateChanged += (o, e) => StateHasChanged();
-
-        var uri = _navigationManager.Uri;
-        int keyIndex = uri.IndexOf("#key=");
-        var encryptionKey = keyIndex > 0
-            ? uri.Substring(keyIndex + 5)
-            : ""; 
-
-        await _state.LoadAsync(SessionId, encryptionKey);
+        await _state.LoadAsync(SessionId);
     }
 
     void OnEditTitleClicked()

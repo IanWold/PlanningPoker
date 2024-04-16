@@ -5,7 +5,7 @@ namespace PlanningPoker.Server;
 
 public class RedisStore(IDatabase database) : IStore
 {
-    public async Task CreateParticipantAsync(Guid sessionId, string participantId, string name)
+    public async Task CreateParticipantAsync(string sessionId, string participantId, string name)
     {
         await database.HashSetAsync(
             $"{sessionId}:participants:{participantId}",
@@ -20,19 +20,19 @@ public class RedisStore(IDatabase database) : IStore
         await database.ListRightPushAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
     }
 
-    public async Task<Guid> CreateSessionAsync(string title)
+    public async Task<string> CreateSessionAsync(string title)
     {
-        Guid newGuid;
+        string newSessionId;
         bool insertResult;
 
         do
         {
-            newGuid = Guid.NewGuid();
+            newSessionId = Guid.NewGuid().ToString().Split('-').First();
 
             var transaction = database.CreateTransaction();
 
-            transaction.AddCondition(Condition.KeyNotExists(newGuid.ToString()));
-            var _ = transaction.HashSetAsync(key: newGuid.ToString(),
+            transaction.AddCondition(Condition.KeyNotExists(newSessionId));
+            var _ = transaction.HashSetAsync(key: newSessionId,
                 hashFields: [
                     new HashEntry(nameof(Session.Title), title),
                     new HashEntry(nameof(Session.State), Enum.GetName(State.Hidden))
@@ -43,27 +43,25 @@ public class RedisStore(IDatabase database) : IStore
         }
         while (!insertResult);
 
-        return newGuid;
+        return newSessionId;
     }
     
-    public async Task DeleteParticipantAsync(Guid sessionId, string participantId)
+    public async Task DeleteParticipantAsync(string sessionId, string participantId)
     {
         await database.ListRemoveAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
         await database.KeyDeleteAsync($"{sessionId}:participants:{participantId}", flags: CommandFlags.FireAndForget);
 
         if (await database.ListLengthAsync($"{sessionId}:participants") == 0)
         {
-            await database.KeyDeleteAsync(sessionId.ToString(), flags: CommandFlags.FireAndForget);
+            await database.KeyDeleteAsync(sessionId, flags: CommandFlags.FireAndForget);
             await database.KeyDeleteAsync($"{sessionId}:participants", flags: CommandFlags.FireAndForget);
         }
     }
 
-    public async Task<bool> ExistsSessionAsync(Guid sessionId)
-    {
-        return await database.KeyExistsAsync(sessionId.ToString());
-    }
+    public async Task<bool> ExistsSessionAsync(string sessionId) =>
+        await database.KeyExistsAsync(sessionId);
 
-    public async Task<Session?> GetSessionAsync(Guid sessionId)
+    public async Task<Session?> GetSessionAsync(string sessionId)
     {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
 
@@ -72,7 +70,7 @@ public class RedisStore(IDatabase database) : IStore
 
         Task[] readTasks = [
             database
-                .HashGetAllAsync(sessionId.ToString())
+                .HashGetAllAsync(sessionId)
                 .ContinueWith(s =>
                     s.Result.Length > 0
                         ? session = new Session(
@@ -100,40 +98,30 @@ public class RedisStore(IDatabase database) : IStore
 
         if (session is not null)
         {
-            session = session with { Participants = participants.ToArray() };
+            session = session with { Participants = [.. participants] };
         }
 
         return session;
     }
 
-    public async Task IncrementParticipantStarsAsync(Guid sessionId, string participantId, int count = 1)
-    {
+    public async Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1) =>
         await database.HashIncrementAsync($"{sessionId}:participants:{participantId}", nameof(Participant.Stars), count, flags: CommandFlags.FireAndForget);
-    }
 
-    public async Task UpdateAllParticipantPointsAsync(Guid sessionId, string points = "")
+    public async Task UpdateAllParticipantPointsAsync(string sessionId, string points = "")
     {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
         Parallel.ForEach(participantIds, i => database.HashSet($"{sessionId}:participants:{i}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget));
     }
 
-    public async Task UpdateParticipantNameAsync(Guid sessionId, string participantId, string name)
-    {
-        await database.HashSetAsync($"{sessionId}:participants:{participantId}", [ new HashEntry(nameof(Participant.Name), name) ], flags: CommandFlags.FireAndForget);
-    }
-    
-    public async Task UpdateParticipantPointsAsync(Guid sessionId, string participantId, string points)
-    {
-        await database.HashSetAsync($"{sessionId}:participants:{participantId}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget);
-    }
+    public async Task UpdateParticipantNameAsync(string sessionId, string participantId, string name) =>
+        await database.HashSetAsync($"{sessionId}:participants:{participantId}", [new HashEntry(nameof(Participant.Name), name)], flags: CommandFlags.FireAndForget);
 
-    public async Task UpdateSessionStateAsync(Guid sessionId, State state)
-    {
-        await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.State), Enum.GetName(state)) ], flags: CommandFlags.FireAndForget);
-    }
+    public async Task UpdateParticipantPointsAsync(string sessionId, string participantId, string points) =>
+        await database.HashSetAsync($"{sessionId}:participants:{participantId}", [new HashEntry(nameof(Participant.Points), points)], flags: CommandFlags.FireAndForget);
 
-    public async Task UpdateSessionTitleAsync(Guid sessionId, string title)
-    {
-        await database.HashSetAsync(sessionId.ToString(), [ new HashEntry(nameof(Session.Title), title) ], flags: CommandFlags.FireAndForget);
-    }
+    public async Task UpdateSessionStateAsync(string sessionId, State state) =>
+        await database.HashSetAsync(sessionId, [new HashEntry(nameof(Session.State), Enum.GetName(state))], flags: CommandFlags.FireAndForget);
+
+    public async Task UpdateSessionTitleAsync(string sessionId, string title) =>
+        await database.HashSetAsync(sessionId, [new HashEntry(nameof(Session.Title), title)], flags: CommandFlags.FireAndForget);
 }

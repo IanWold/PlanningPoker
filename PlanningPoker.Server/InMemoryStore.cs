@@ -2,139 +2,78 @@ namespace PlanningPoker.Server;
 
 public class InMemoryStore : IStore
 {
-    static readonly Dictionary<Guid, Session> _sessions = [];
+    static readonly Dictionary<string, Session> _sessions = [];
 
-    public Task CreateParticipantAsync(Guid sessionId, string participantId, string name)
+    private static Task UpdateSession(string sessionId, Func<Session, Session> update)
     {
-        var session = _sessions[sessionId];
-        
-        _sessions[sessionId] = session with {
-            Participants = [..session.Participants, new(participantId, name, "", 0) ]
-        };
-
+        _sessions[sessionId] = update(_sessions[sessionId]);
         return Task.CompletedTask;
     }
 
-    public Task<Guid> CreateSessionAsync(string title)
+    private static Task UpdateParticipant(string sessionId, string participantId, Func<Participant, Participant> update)
     {
-        Guid newGuid;
+        var participant = _sessions[sessionId].Participants.SingleOrDefault(p => p.ParticipantId == participantId);
+        return UpdateSession(sessionId, session => session with { Participants = [ ..session.Participants.Except([participant]), update(participant!) ] });
+    }
+
+    public Task CreateParticipantAsync(string sessionId, string participantId, string name) =>
+        UpdateSession(sessionId, session => session with {
+            Participants = [..session.Participants, new(participantId, name, "", 0) ]
+        });
+
+    public Task<string> CreateSessionAsync(string title)
+    {
+        string newSessionId;
 
         do
         {
-            newGuid = Guid.NewGuid();
+            newSessionId = Guid.NewGuid().ToString().Split('-').First();
         }
-        while (_sessions.ContainsKey(newGuid));
+        while (_sessions.ContainsKey(newSessionId));
 
-        _sessions.Add(newGuid, new(title, [], State.Hidden));
+        _sessions.Add(newSessionId, new(title, [], State.Hidden));
 
-        return Task.FromResult(newGuid);
+        return Task.FromResult(newSessionId);
     }
 
-    public Task DeleteParticipantAsync(Guid sessionId, string participantId)
-    {
-        var session = _sessions[sessionId];
-        
-        _sessions[sessionId] = session with {
+    public Task DeleteParticipantAsync(string sessionId, string participantId) =>
+        UpdateSession(sessionId, session => session with {
             Participants = session.Participants.Where(p => p.ParticipantId != participantId).ToArray()
-        };
+        });
 
-        return Task.CompletedTask;
-    }
+    public Task<bool> ExistsSessionAsync(string sessionId) =>
+        Task.FromResult(_sessions.ContainsKey(sessionId));
 
-    public Task<bool> ExistsSessionAsync(Guid sessionId)
-    {
-        return Task.FromResult(_sessions.ContainsKey(sessionId));
-    }
+    public Task<Session?> GetSessionAsync(string sessionId) =>
+        Task.FromResult(_sessions.TryGetValue(sessionId, out var session) ? session : null);
 
-    public Task<Session?> GetSessionAsync(Guid sessionId)
-    {
-        return Task.FromResult(_sessions.TryGetValue(sessionId, out var session) ? session : null);
-    }
+    public Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1) =>
+        UpdateParticipant(sessionId, participantId, participant => participant with {
+            Stars = participant.Stars + count
+        });
 
-    public Task IncrementParticipantStarsAsync(Guid sessionId, string participantId, int count = 1)
-    {
-        var session = _sessions[sessionId];
-        
-        _sessions[sessionId] = session with {
-            Participants =
-                session.Participants
-                .Select(p =>
-                    p.ParticipantId == participantId
-                    ? p with { Stars = p.Stars + count }
-                    : p
-                )
-                .ToArray()
-        };
-
-        return Task.CompletedTask;
-    }
-
-    public Task UpdateAllParticipantPointsAsync(Guid sessionId, string points = "")
-    {
-        var session = _sessions[sessionId];
-        
-        _sessions[sessionId] = session with {
+    public Task UpdateAllParticipantPointsAsync(string sessionId, string points = "") =>
+        UpdateSession(sessionId, session => session with {
             Participants = session.Participants.Select(p => p with { Points = points}).ToArray()
-        };
+        });
 
-        return Task.CompletedTask;
-    }
+    public Task UpdateParticipantNameAsync(string sessionId, string participantId, string name) =>
+        UpdateParticipant(sessionId, participantId, participant => participant with {
+            Name = name
+        });
 
-    public Task UpdateParticipantNameAsync(Guid sessionId, string participantId, string name)
-    {
-        var session = _sessions[sessionId];
-        
-        _sessions[sessionId] = session with {
-            Participants =
-                session.Participants
-                .Select(p =>
-                    p.ParticipantId == participantId
-                    ? p with { Name = name }
-                    : p
-                )
-                .ToArray()
-        };
+    public Task UpdateParticipantPointsAsync(string sessionId, string participantId, string points) =>
+        UpdateParticipant(sessionId, participantId, participant => participant with {
+            Points = points
+        });
 
-        return Task.CompletedTask;
-    }
-
-    public Task UpdateParticipantPointsAsync(Guid sessionId, string participantId, string points)
-    {
-        var session = _sessions[sessionId];
-        
-        _sessions[sessionId] = session with {
-            Participants =
-                session.Participants
-                .Select(p =>
-                    p.ParticipantId == participantId
-                    ? p with { Points = points }
-                    : p
-                )
-                .ToArray()
-        };
-
-        return Task.CompletedTask;
-    }
-
-    public Task UpdateSessionStateAsync(Guid sessionId, State state)
-    {
-        var session = _sessions[sessionId];
-        
-        _sessions[sessionId] = session with {
+    public Task UpdateSessionStateAsync(string sessionId, State state) =>
+        UpdateSession(sessionId, session => session with {
             State = state
-        };
+        });
 
-        return Task.CompletedTask;
-    }
-
-    public Task UpdateSessionTitleAsync(Guid sessionId, string title)
-    {
-        var session = _sessions[sessionId];
-        
-        _sessions[sessionId] = session with {
+    public Task UpdateSessionTitleAsync(string sessionId, string title) =>
+        UpdateSession(sessionId, session => session with {
             Title = title
-        };
-
-        return Task.CompletedTask;
-    }
+        });
 }

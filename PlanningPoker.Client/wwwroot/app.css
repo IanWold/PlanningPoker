@@ -294,3 +294,10 @@ button:disabled, button[disabled] {
     position: absolute;
     animation: floatAndFade 2s ease-out forwards; /* Adjust timing as needed */
 }
+
+@media (prefers-color-scheme: dark) {
+    .bg-light {
+        background-color: #242424 !important;
+        color: #ffffff !important;
+    }
+}

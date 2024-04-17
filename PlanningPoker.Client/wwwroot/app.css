@@ -300,4 +300,17 @@ button:disabled, button[disabled] {
         background-color: #242424 !important;
         color: #ffffff !important;
     }
+    text {
+        fill: #ffffff !important;
+    }
+    .btn-outline-light {
+        color: #ffffff !important;
+    }
+    .btn-outline-light:hover {
+        background-color: #242424 !important;
+        color: #ffffff !important;
+    }
+    path {
+        stroke: #ffffff !important;
+    }
 }

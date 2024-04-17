@@ -1,5 +1,6 @@
-﻿@page "/session/{SessionId:guid}"
+﻿@page "/session/{SessionId}"
 @inject SessionState _state
+@inject NavigationManager _navigationManager
 
 @using System
 
@@ -88,7 +89,7 @@ else
 
 @code {
     [Parameter]
-    public Guid SessionId { get; set; }
+    public string SessionId { get; set; }
 
     string Title { get; set; } = string.Empty;
 

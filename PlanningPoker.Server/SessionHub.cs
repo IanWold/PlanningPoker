@@ -5,7 +5,7 @@ namespace PlanningPoker.Server;
 #pragma warning disable CS4014 // Task.Run fire-and-forget
 public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 {
-    public async Task<Session> ConnectToSessionAsync(Guid sessionId)
+    public async Task<Session> ConnectToSessionAsync(string sessionId)
     {
         if (await store.GetSessionAsync(sessionId) is not Session session)
         {
@@ -17,7 +17,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         return session;
     }
 
-    public async Task<Guid> CreateSessionAsync(string title)
+    public async Task<string> CreateSessionAsync(string title)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
 
@@ -28,7 +28,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         return newGuid;
     }
 
-    public async Task<string> JoinSessionAsync(Guid sessionId, string name)
+    public async Task<string> JoinSessionAsync(string sessionId, string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
@@ -45,7 +45,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         return Context.ConnectionId;
     }
 
-    public async Task DisconnectFromSessionAsync(Guid sessionId)
+    public async Task DisconnectFromSessionAsync(string sessionId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.ToString());
 
@@ -54,21 +54,21 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
     }
 
-    public async Task SendStarToParticipantAsync(Guid sessionId, string participantId)
+    public async Task SendStarToParticipantAsync(string sessionId, string participantId)
     {
         Task.Run(async () => await store.IncrementParticipantStarsAsync(sessionId, participantId));
 
         await Clients.Group(sessionId.ToString()).OnStarSentToParticipant(participantId);
     }
 
-    public async Task UpdateParticipantPointsAsync(Guid sessionId, string points)
+    public async Task UpdateParticipantPointsAsync(string sessionId, string points)
     {
         Task.Run(async () => await store.UpdateParticipantPointsAsync(sessionId, Context.ConnectionId, points));
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(Context.ConnectionId, points);
     }
 
-    public async Task UpdateSessionStateAsync(Guid sessionId, State state)
+    public async Task UpdateSessionStateAsync(string sessionId, State state)
     {
         Task.Run(async () => await store.UpdateSessionStateAsync(sessionId, state));
 
@@ -80,7 +80,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         await Clients.Group(sessionId.ToString()).OnStateUpdated(state);
     }
 
-    public async Task UpdateSessionTitleAsync(Guid sessionId, string title)
+    public async Task UpdateSessionTitleAsync(string sessionId, string title)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
 
@@ -89,7 +89,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
     }
 
-    public async Task UpdateParticipantNameAsync(Guid sessionId, string name)
+    public async Task UpdateParticipantNameAsync(string sessionId, string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 

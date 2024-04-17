@@ -57,6 +57,65 @@
                 event.preventDefault();
             });
         }
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const objectKey = window.location.hash.slice("#key=".length);
+            if (objectKey.length > 0) {
+                window.encryptionKey = await window.crypto.subtle.importKey(
+                    "jwk",
+                    {
+                        k: objectKey,
+                        alg: "A128GCM",
+                        ext: true,
+                        key_ops: ["encrypt", "decrypt"],
+                        kty: "oct",
+                    },
+                    { name: "AES-GCM", length: 128 },
+                    true,
+                    ["encrypt", "decrypt"]
+                );
+            }
+        });
+
+        async function getEncryptionKey() {
+            if (!window.encryptionKey) {
+                window.encryptionKey = await window.crypto.subtle.generateKey(
+                    { name: "AES-GCM", length: 128 },
+                    true,
+                    ["encrypt", "decrypt"],
+                );
+            }
+
+            return (await window.crypto.subtle.exportKey("jwk", window.encryptionKey)).k
+        }
+    
+        async function encrypt(value) {
+            return window.btoa(String.fromCharCode.apply(null, new Uint8Array(
+                await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: new Uint8Array(12) },
+                    window.encryptionKey,
+                    new TextEncoder().encode(value)
+                )
+            )));
+        }
+
+        async function decrypt(value) {
+            const bValue = window.atob(value)
+            const buffer = new ArrayBuffer(bValue.length)
+            const bufferView = new Uint8Array(buffer)
+
+            for (let i = 0; i < bValue.length; i++) {
+                bufferView[i] = bValue.charCodeAt(i)
+            }
+            
+            return new TextDecoder().decode(new Uint8Array(
+                await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: new Uint8Array(12) },
+                    window.encryptionKey,
+                    buffer
+                )
+            ));
+        }
     </script>
 </body>
 

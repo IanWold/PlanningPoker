@@ -1,11 +1,11 @@
 ﻿@inject SessionState _state
 @inject IJSRuntime _jsRuntime
 
-<div class="m-3" style="position: absolute; top: 0; right: 0;">
+<div class="m-3" style="position: absolute; top: 0; left: 0;">
     <button type="button" class="m-2 btn btn-square btn-outline-success border-0 dropdown-toggle caret-off" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
         <ion-icon name="add-sharp"></ion-icon>
     </button>
-    <div class="dropdown-menu dropdown-menu-end mt-3 shadow border-0">
+    <div class="dropdown-menu mt-3 shadow border-0">
         <h6 class="dropdown-header"><ion-icon name="person-add-sharp" style="margin-bottom: -2px;"></ion-icon> Invite a participant</h6>
         <div class="input-group px-3 pb-2" style="width: 675px;">
             <input type="email" class="form-control" disabled value="@(_state.SessionUrl)">

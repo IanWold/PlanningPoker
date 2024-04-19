@@ -295,22 +295,34 @@ button:disabled, button[disabled] {
     animation: floatAndFade 2s ease-out forwards; /* Adjust timing as needed */
 }
 
-@media (prefers-color-scheme: dark) {
-    .bg-light {
-        background-color: #242424 !important;
-        color: #ffffff !important;
+text {
+    fill: var(--bs-dark) !important;
+}
+
+path {
+    stroke: var(--bs-dark) !important;
+}
+
+[data-bs-theme="dark"] {
+    --bs-dark: #f8f9fa;
+    --bs-light: #212529;
+    --bs-dark-rgb: 248, 249, 250;
+    --bs-light-rgb: 33, 37, 41;
+    
+    .card {
+        --bs-card-bg: var(--bs-dark-bg-subtle);
     }
-    text {
-        fill: #ffffff !important;
-    }
+
     .btn-outline-light {
-        color: #ffffff !important;
+        --bs-btn-hover-color: #fff;
+        --bs-btn-hover-bg: #424649;
     }
-    .btn-outline-light:hover {
-        background-color: #242424 !important;
-        color: #ffffff !important;
+
+    .dropdown-menu {
+        --bs-dropdown-bg: var(--bs-dark-bg-subtle);
     }
-    path {
-        stroke: #ffffff !important;
+
+    .logo-hero img {
+        filter: drop-shadow(0 0 0 #f8f9fa) drop-shadow(0px 0px 2px #f8f9fa) drop-shadow(0px 0px 2px #f8f9fa) drop-shadow(0px 0px 2px #f8f9fa);
     }
 }

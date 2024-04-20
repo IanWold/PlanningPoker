@@ -1,25 +1,32 @@
 ﻿@inject SessionState _state
 
-<div class="d-flex gap-2" style="width: 600px; margin-top: 66vh;">
-    @foreach (var (count, points) in PointData)
-    {
-        <div class="card w-auto py-2 px-3 border-0 rounded-pill shadow @(count == WinningPointsCount ? (IsWinningPointsTied ? "text-bg-secondary" : "text-bg-success") : "")" style="flex-grow: @count;"><div class="card-body p-0 text-center fw-bold">@points</div></div>
-    }
+<div class="p-3" style="position: absolute; left:50%; bottom: 0; transform: translate(-50%, 0%);">
+    <div class="d-flex gap-2 justify-content-between align-items-end p-2">
+        @foreach (var count in PointCounts)
+        {
+            @if (count > 0)
+            {
+                <div>
+                    <label class="w-100 text-center fw-bold" style="margin-top: -36px;">@count</label>
+                    <div class="rounded mb-3 bg-secondary shadow" style="width: 36px; height: @(36 + (164 * ((double)count / (double)_state.Session.Participants.Count())))px;"></div>
+                </div>
+            }
+            else
+            {
+                <div>
+                    <label class="w-100 text-center fw-bold" style="margin-top: -36px;"></label>
+                    <div class="rounded mb-3 bg-secondary-subtle shadow" style="width: 36px; height: 36px;"></div>
+                </div>
+            }
+        }
+    </div>
 </div>
 
 @code {
-    IEnumerable<(int count, string points)> PointData =>
-        _state.Session.Participants
-            .Where(p => !string.IsNullOrWhiteSpace(p.Points))
-            .GroupBy(p => p.Points)
-            .Select(g => (count: g.Count(), points: g.Key))
-            .OrderBy(p => p.points);
-
-    int WinningPointsCount =>
-        PointData.OrderByDescending(p => p.count).FirstOrDefault().count;
-
-    bool IsWinningPointsTied =>
-        PointData.Where(p => p.count == WinningPointsCount).Count() > 1;
+    IEnumerable<int> PointCounts =>
+        _state.Options.Select(o =>
+            _state.Session.Participants.Where(p => p.Points == o).Count()
+        );
 
     protected override void OnInitialized()
     {

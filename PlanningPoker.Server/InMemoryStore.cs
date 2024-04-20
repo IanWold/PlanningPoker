@@ -6,7 +6,8 @@ public class InMemoryStore : IStore
 
     private static Task UpdateSession(string sessionId, Func<Session, Session> update)
     {
-        _sessions[sessionId] = update(_sessions[sessionId]);
+        var session = _sessions[sessionId];
+        _sessions[sessionId] = update(session);
         return Task.CompletedTask;
     }
 

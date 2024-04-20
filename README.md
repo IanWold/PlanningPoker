@@ -47,7 +47,7 @@ _(See also my guide on [deploying ASP and Blazor apps on Railway](https://ian.wo
 1. [Fork](https://github.com/IanWold/PlanningPoker/fork) and clone this repo
 2. Create an account at [Railway](https://railway.app)
 3. Create a [new project](https://docs.railway.app/guides/projects), and [add a Redis instance](https://docs.railway.app/guides/redis) to it
-4. Add a [nwe service](https://docs.railway.app/guides/services) from your cloned GitHub repo (Railway will handle building and all)
+4. Add a [new service](https://docs.railway.app/guides/services) from your cloned GitHub repo (Railway will handle building and all)
 5. Under the Settings for this service, use the following as your Custom Start Command for Deploy: `./out/PlanningPoker.Server`
 6. Add your Redis connection string as an environment variable: `ConnectionStrings__Redis` (Use Railway's [reference variables](https://docs.railway.app/guides/variables#reference-variables) to make this easy)
 7. Add two environment variables required for .NET:
@@ -87,7 +87,7 @@ Session data is stored in Redis across several keys to eliminate or minimize rac
 
 * `{sessionId}` (guid): Hash with values "Title" and "State".
 * `{sessionId}:participants`: List with values being the IDs of the participants in the session.
-* `{sessionId}:participants:{participantId}`: Hash with values "Name" and "Points".
+* `{sessionId}:participants:{participantId}`: Hash with values "Name", "Points", and "Stars".
 
 All entries associated with a session are removed from Redis when the last participant leaves the session.
 

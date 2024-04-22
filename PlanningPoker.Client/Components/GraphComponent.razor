@@ -24,8 +24,8 @@
 
 @code {
     IEnumerable<int> PointCounts =>
-        _state.Options.Select(o =>
-            _state.Session.Participants.Where(p => p.Points == o).Count()
+        _state.Session.Points.Select(point =>
+            _state.Session.Participants.Where(p => p.Points == point).Count()
         );
 
     protected override void OnInitialized()

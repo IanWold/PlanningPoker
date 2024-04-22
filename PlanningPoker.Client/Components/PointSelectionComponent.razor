@@ -1,19 +1,107 @@
 ﻿@inject SessionState _state
+    
+@if (_state.Session.State == State.Revealed)
+{
+    <GraphComponent />
+}
 
-<div class="card m-3 w-auto shadow-sm border-0" style="max-width: 600px;">
-    <div class="card-body p-2">
-        <div class="d-flex gap-2 justify-content-between">
-            @foreach (var option in _state.Options)
-            {
-                <button class="btn btn-square @(_state.Self?.Points == option ? "btn-primary" : "btn-outline-primary")" @onclick="@(async () => await _state.UpdatePointsAsync(option))">@option</button>
-            }
+@if (IsEditing)
+{
+    <div class="m-3 d-flex gap-2" style="padding-left: 132px;">
+        <div class="card w-auto shadow-sm border-0">
+            <div class="card-body p-2">
+                <div class="d-flex gap-2 justify-content-between">
+                    @foreach (var point in _state.Session.Points)
+                    {
+                        <button class="btn btn-square btn-outline-danger btn-hover-icon" @onclick="@(async () => await OnRemoveClicked(point))">
+                            <label>@point</label>
+                            <ion-icon name="trash-sharp" role="img" class="md hydrated"></ion-icon>
+                        </button>
+                    }
+                </div>
+            </div>
         </div>
+
+        <form class="d-flex gap-2 my-2" @onsubmit=OnAddClicked>
+            <input type="text" class="form-control p-0" style="width: 36px; text-align: center;" disabled="@(IsLoading)" required maxlength="3" pattern="(.|\s)*\S(.|\s)*" @bind-value=PointToAdd>
+            <button class="btn border-0 btn-outline-success" style="width: 36px; padding-left: 10px;" type="submit" disabled="@(IsLoading)"><ion-icon name="add-sharp"></ion-icon></button>
+        </form>
+
+        <button class="btn btn-square btn-outline-secondary border-0 my-2" @onclick=OnCLoseEditClicked><ion-icon name="close-sharp"></ion-icon></button>
     </div>
-</div>
+}
+else
+{
+    <div class="m-3 d-flex" style="padding-left: 52px;">
+        <div class="card w-auto shadow-sm border-0">
+            <div class="card-body p-2">
+                <div class="d-flex gap-2 justify-content-between">
+                    @foreach (var point in _state.Session.Points)
+                    {
+                        <button class="btn btn-square @(_state.Self?.Points == point ? "btn-primary" : "btn-outline-primary")" @onclick="@(async () => await _state.UpdatePointsAsync(point))">@point</button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-square btn-outline-secondary border-0 m-2" @onclick=OnEditClicked><ion-icon name="pencil-sharp"></ion-icon></button>
+    </div>
+}
 
 @code {
+    bool IsEditing { get; set; }
+
+    bool IsLoading { get; set; }
+
+    string PointToAdd { get; set; } = string.Empty;
+
     protected override void OnInitialized()
     {
         _state.OnStateChanged += (o, e) => StateHasChanged();
+    }
+
+    void OnEditClicked()
+    {
+        PointToAdd = "";
+        IsEditing = true;
+    }
+
+    void OnCLoseEditClicked()
+    {
+        IsEditing = false;
+    }
+
+    async Task OnAddClicked()
+    {
+        if (!string.IsNullOrWhiteSpace(PointToAdd))
+        {
+            IsLoading = true;
+            StateHasChanged();
+
+            try
+            {
+                await _state.AddPointAsync(PointToAdd);
+            }
+            catch { }
+            
+            IsLoading = false;
+            PointToAdd = "";
+            StateHasChanged();
+        }
+    }
+
+    async Task OnRemoveClicked(string point)
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            await _state.RemovePointAsync(point);
+        }
+        catch { }
+        
+        IsLoading = false;
+        StateHasChanged();
     }
 }

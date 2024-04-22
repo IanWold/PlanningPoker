@@ -120,6 +120,20 @@ button.hidden-icon:hover ion-icon {
     }
 }
 
+.btn-hover-icon ion-icon {
+    display: none;
+}
+
+.btn-hover-icon:hover {
+    label {
+        display: none;
+    }
+
+    ion-icon {
+        display: inline-block;
+    }
+}
+
 .circle {
     display: grid;
     grid-template-areas: "layer";

@@ -5,6 +5,13 @@ namespace PlanningPoker.Server;
 #pragma warning disable CS4014 // Task.Run fire-and-forget
 public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 {
+    public async Task AddPointAsync(string sessionId, string point)
+    {
+        Task.Run(async () => await store.AddPointAsync(sessionId, point));
+
+        await Clients.Groups(sessionId).OnPointAdded(point);
+    }
+
     public async Task<Session> ConnectToSessionAsync(string sessionId)
     {
         if (await store.GetSessionAsync(sessionId) is not Session session)
@@ -17,11 +24,11 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         return session;
     }
 
-    public async Task<string> CreateSessionAsync(string title)
+    public async Task<string> CreateSessionAsync(string title, IEnumerable<string> points)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
 
-        var newGuid = await store.CreateSessionAsync(title);
+        var newGuid = await store.CreateSessionAsync(title, points);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, newGuid.ToString());
 
@@ -52,6 +59,13 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         Task.Run(async () => await store.DeleteParticipantAsync(sessionId, Context.ConnectionId));
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
+    }
+
+    public async Task RemovePointAsync(string sessionId, string point)
+    {
+        Task.Run(async () => await store.RemovePointAsync(sessionId, point));
+
+        await Clients.Groups(sessionId).OnPointRemoved(point);
     }
 
     public async Task SendStarToParticipantAsync(string sessionId, string participantId)

@@ -5,6 +5,9 @@ namespace PlanningPoker.Server;
 
 public class RedisStore(IDatabase database) : IStore
 {
+    public async Task AddPointAsync(string sessionId, string point) =>
+        await database.ListRightPushAsync($"{sessionId}:points", point, flags: CommandFlags.FireAndForget);
+
     public async Task CreateParticipantAsync(string sessionId, string participantId, string name)
     {
         await database.HashSetAsync(
@@ -20,7 +23,7 @@ public class RedisStore(IDatabase database) : IStore
         await database.ListRightPushAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
     }
 
-    public async Task<string> CreateSessionAsync(string title)
+    public async Task<string> CreateSessionAsync(string title, IEnumerable<string> points)
     {
         string newSessionId;
         bool insertResult;
@@ -42,6 +45,16 @@ public class RedisStore(IDatabase database) : IStore
             insertResult = await transaction.ExecuteAsync();
         }
         while (!insertResult);
+
+#pragma warning disable CS4014 // Fire and forget
+        Task.Run(async () =>
+        {
+            foreach (var point in points)
+            {
+                await database.ListRightPushAsync($"{newSessionId}:points", point);
+            }
+        });
+#pragma warning restore CS4014
 
         return newSessionId;
     }
@@ -65,8 +78,9 @@ public class RedisStore(IDatabase database) : IStore
     {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
 
-        var session = new Session("", [], State.Hidden);
+        var session = new Session("", [], State.Hidden, []);
         var participants = new ConcurrentBag<Participant>();
+        var points = Enumerable.Empty<string>();
 
         Task[] readTasks = [
             database
@@ -76,10 +90,13 @@ public class RedisStore(IDatabase database) : IStore
                         ? session = new Session(
                             Title: s.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
                             Participants: [],
-                            State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!)
+                            State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!),
+                            Points: []
                         )
                         : null
                 ),
+            database.ListRangeAsync($"{sessionId}:points")
+                .ContinueWith(p => points = p?.Result?.Select(v => (string)v!)?.ToArray() ?? []),
             ..participantIds.Select(i =>
                 database
                     .HashGetAllAsync($"{sessionId}:participants:{i}")
@@ -106,6 +123,9 @@ public class RedisStore(IDatabase database) : IStore
 
     public async Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1) =>
         await database.HashIncrementAsync($"{sessionId}:participants:{participantId}", nameof(Participant.Stars), count, flags: CommandFlags.FireAndForget);
+
+    public async Task RemovePointAsync(string sessionId, string point) =>
+        await database.ListRemoveAsync($"{sessionId}:points", point, flags: CommandFlags.FireAndForget);
 
     public async Task UpdateAllParticipantPointsAsync(string sessionId, string points = "")
     {

@@ -22,7 +22,12 @@ public class InMemoryStore : IStore
             Participants = [..session.Participants, new(participantId, name, "", 0) ]
         });
 
-    public Task<string> CreateSessionAsync(string title)
+    public Task AddPointAsync(string sessionId, string point) =>
+        UpdateSession(sessionId, session => session with {
+            Points = [..session.Points, point]
+        });
+
+    public Task<string> CreateSessionAsync(string title, IEnumerable<string> points)
     {
         string newSessionId;
 
@@ -32,7 +37,7 @@ public class InMemoryStore : IStore
         }
         while (_sessions.ContainsKey(newSessionId));
 
-        _sessions.Add(newSessionId, new(title, [], State.Hidden));
+        _sessions.Add(newSessionId, new(title, [], State.Hidden, points));
 
         return Task.FromResult(newSessionId);
     }
@@ -51,6 +56,11 @@ public class InMemoryStore : IStore
     public Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1) =>
         UpdateParticipant(sessionId, participantId, participant => participant with {
             Stars = participant.Stars + count
+        });
+
+    public Task RemovePointAsync(string sessionId, string point) =>
+        UpdateSession(sessionId, session => session with {
+            Points = session.Points.Except([point]).ToArray()
         });
 
     public Task UpdateAllParticipantPointsAsync(string sessionId, string points = "") =>

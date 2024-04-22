@@ -115,7 +115,11 @@ public class RedisStore(IDatabase database) : IStore
 
         if (session is not null)
         {
-            session = session with { Participants = [.. participants] };
+            session = session with
+            {
+                Participants = [.. participants],
+                Points = points
+            };
         }
 
         return session;

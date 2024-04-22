@@ -23,8 +23,8 @@
                 }
             </label>
 
-            <div class="point shadow @(!_state.Session.Points.Contains(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                @if (_state.Session.State != State.Hidden && _state.Session.Points.Contains(_state.Others.ElementAt(i).Points))
+            <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
+                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points))
                 {
                     <span>@_state.Others.ElementAt(i).Points</span>
                 }
@@ -47,8 +47,8 @@
                 }
             </label>
 
-            <div class="point shadow @(!_state.Session.Points.Contains(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                @if (_state.Session.State != State.Hidden && _state.Session.Points.Contains(_state.Self.Points))
+            <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
+                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points))
                 {
                     <span>@_state.Self.Points</span>
                 }

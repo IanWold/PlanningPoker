@@ -31,16 +31,16 @@
 
                 <div class="form-control px-2 d-flex gap-2 mt-2">
                     <input type="radio" class="btn-check" name="options-outlined" id="check-fibonacci" autocomplete="off" disabled="@(IsLoading)" checked @onchange="@(() => PointValueTemplate = "fibonacci")">
-                    <label class="btn btn-outline-secondary border-0" style="flex-basis: 0; flex-grow: 1;" for="check-fibonacci">Fibonacci</label>
+                    <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-fibonacci">🐚 Fibonacci</label>
                 
                     <input type="radio" class="btn-check" name="options-outlined" id="check-powers" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "powers")">
-                    <label class="btn btn-outline-secondary border-0" style="flex-basis: 0; flex-grow: 1;" for="check-powers">Powers of 2</label>
+                    <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-powers">⚡ Powers of 2</label>
                     
                     <input type="radio" class="btn-check" name="options-outlined" id="check-tshirt" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "tshirt")">
-                    <label class="btn btn-outline-secondary border-0" style="flex-basis: 0; flex-grow: 1;" for="check-tshirt">T-Shirt Sizes</label>
+                    <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-tshirt">👕 T-Shirt Sizes</label>
                     
                     <input type="radio" class="btn-check" name="options-outlined" id="check-west" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "west")">
-                    <label class="btn btn-outline-secondary border-0" style="flex-basis: 0; flex-grow: 1;" for="check-west">Wild West</label>
+                    <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-west">🏜️ Wild West</label>
                 </div>
 
                 <button class="btn btn-primary mt-2 w-100" type="submit" disabled="@(IsLoading)">Start Planning</button>

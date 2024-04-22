@@ -37,8 +37,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public IEnumerable<Participant> Others =>
         Session?.Participants?.Where(p => p.ParticipantId != _participantId) ?? [];
 
-    public IEnumerable<string> Options { get; init; } = [ "0", "0.5", "1", "2", "3", "5", "8", "?" ];
-
     public bool ShowShareNotification { get; private set; }
 
     public string SessionUrl =>
@@ -79,6 +77,15 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
     }
 
+    public async Task AddPointAsync(string point)
+    {
+        point = point.Trim();
+
+        await EnsureInitialized();
+
+        Task.Run(async () => await _server!.AddPointAsync(_sessionId!, point));
+    }
+
     public async Task CreateAsync(string title, string name)
     {
         title = title.Trim();
@@ -90,8 +97,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _encryptionKey = await jsRuntime.InvokeAsync<string>("getEncryptionKey") ?? string.Empty;
 
-        _sessionId = await _server!.CreateSessionAsync(await EncryptAsync(title));
-        Session = new(title, [], State.Hidden);
+        _sessionId = await _server!.CreateSessionAsync(await EncryptAsync(title), [ "0", "½", "1", "2", "3", "5", "8", "∞", "?" ]);
+        Session = new(title, [], State.Hidden, [ "0", "½", "1", "2", "3", "5", "8", "∞", "?" ]);
         ShowShareNotification = true;
 
         await JoinAsync(name);
@@ -179,6 +186,13 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _isUpdateBelayed = false;
         NotifyUpdate();
+    }
+
+    public async Task RemovePointAsync(string point)
+    {
+        await EnsureInitialized();
+
+        Task.Run(async () => await _server!.RemovePointAsync(_sessionId!, point));
     }
 
     public async Task SendStarToParticipantAsync(string participantId)
@@ -300,6 +314,28 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
                 Session!.Participants
                 .Where(p => p.ParticipantId != participantId)
                 .ToList()
+        };
+
+        NotifyUpdate();
+    }
+
+    public async Task OnPointAdded(string point)
+    {
+        await EnsureInitialized();
+
+        Session = Session! with {
+            Points = [..Session!.Points, point]
+        };
+
+        NotifyUpdate();
+    }
+
+    public async Task OnPointRemoved(string point)
+    {
+        await EnsureInitialized();
+
+        Session = Session! with {
+            Points = Session!.Points.Except([point]).ToArray()
         };
 
         NotifyUpdate();

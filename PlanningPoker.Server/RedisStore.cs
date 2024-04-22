@@ -68,6 +68,7 @@ public class RedisStore(IDatabase database) : IStore
         {
             await database.KeyDeleteAsync(sessionId, flags: CommandFlags.FireAndForget);
             await database.KeyDeleteAsync($"{sessionId}:participants", flags: CommandFlags.FireAndForget);
+            await database.KeyDeleteAsync($"{sessionId}:points", flags: CommandFlags.FireAndForget);
         }
     }
 

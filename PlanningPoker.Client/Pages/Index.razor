@@ -19,16 +19,31 @@
 
     <div class="card shadow border-0">
         <div class="card-body">
-            <form class="d-flex gap-2" @onsubmit=OnStartPlanningClicked>
-                <div class="flex-fill">
-                    <input type="text" class="form-control" placeholder="Session Title" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Title>
+            <form @onsubmit=OnStartPlanningClicked>
+                <div class="d-flex gap-2">
+                    <div class="flex-fill">
+                        <input type="text" class="form-control" placeholder="Session Title" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Title>
+                    </div>
+                    <div class="flex-fill">
+                        <input type="text" class="form-control" placeholder="Your Name" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Name>
+                    </div>
                 </div>
-                <div class="flex-fill">
-                    <input type="text" class="form-control" placeholder="Your Name" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Name>
+
+                <div class="form-control px-2 d-flex gap-2 mt-2">
+                    <input type="radio" class="btn-check" name="options-outlined" id="check-fibonacci" autocomplete="off" disabled="@(IsLoading)" checked @onchange="@(() => PointValueTemplate = "fibonacci")">
+                    <label class="btn btn-outline-secondary border-0" style="flex-basis: 0; flex-grow: 1;" for="check-fibonacci">Fibonacci</label>
+                
+                    <input type="radio" class="btn-check" name="options-outlined" id="check-powers" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "powers")">
+                    <label class="btn btn-outline-secondary border-0" style="flex-basis: 0; flex-grow: 1;" for="check-powers">Powers of 2</label>
+                    
+                    <input type="radio" class="btn-check" name="options-outlined" id="check-tshirt" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "tshirt")">
+                    <label class="btn btn-outline-secondary border-0" style="flex-basis: 0; flex-grow: 1;" for="check-tshirt">T-Shirt Sizes</label>
+                    
+                    <input type="radio" class="btn-check" name="options-outlined" id="check-west" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "west")">
+                    <label class="btn btn-outline-secondary border-0" style="flex-basis: 0; flex-grow: 1;" for="check-west">Wild West</label>
                 </div>
-                <div class="">
-                    <button class="btn btn-primary" type="submit" disabled="@(IsLoading)">Start Planning</button>
-                </div>
+
+                <button class="btn btn-primary mt-2 w-100" type="submit" disabled="@(IsLoading)">Start Planning</button>
             </form>
 
             @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -74,6 +89,8 @@
 
     bool IsLoading { get; set; }
 
+    string PointValueTemplate { get; set; } = "fibonacci";
+
     async Task OnStartPlanningClicked()
     {
         if (!string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Name))
@@ -82,9 +99,17 @@
             ErrorMessage = null;
             StateHasChanged();
 
+            string[] pointValues = PointValueTemplate switch
+            {
+                "powers" => [ "1", "2", "4", "8", "16", "32", "∞", "?" ],
+                "tshirt" => [ "XS", "S", "M", "L", "XL", "?" ],
+                "west" => [ "🤠", "🐎", "🌵", "🦬", "🪕", "🐄", "🔥", "🥩" ],
+                _ => [ "½", "1", "2", "3", "5", "8", "∞", "?" ]
+            };
+
             try
             {
-                await _state.CreateAsync(Title, Name);
+                await _state.CreateAsync(Title, Name, pointValues);
             }
             catch
             {

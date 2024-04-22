@@ -86,7 +86,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         Task.Run(async () => await _server!.AddPointAsync(_sessionId!, point));
     }
 
-    public async Task CreateAsync(string title, string name)
+    public async Task CreateAsync(string title, string name, IEnumerable<string> pointValues)
     {
         title = title.Trim();
         name = name.Trim();
@@ -97,8 +97,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _encryptionKey = await jsRuntime.InvokeAsync<string>("getEncryptionKey") ?? string.Empty;
 
-        _sessionId = await _server!.CreateSessionAsync(await EncryptAsync(title), [ "0", "½", "1", "2", "3", "5", "8", "∞", "?" ]);
-        Session = new(title, [], State.Hidden, [ "0", "½", "1", "2", "3", "5", "8", "∞", "?" ]);
+        _sessionId = await _server!.CreateSessionAsync(await EncryptAsync(title), pointValues);
+        Session = new(title, [], State.Hidden, pointValues);
         ShowShareNotification = true;
 
         await JoinAsync(name);

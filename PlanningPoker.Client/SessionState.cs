@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using MessagePack;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
@@ -59,6 +60,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _connection = new HubConnectionBuilder()
             .WithUrl(navigationManager.ToAbsoluteUri("/sessions/hub"))
+            .AddMessagePackProtocol()
             .Build();
 
         _connection.ClientRegistration<ISessionHubClient>(this);

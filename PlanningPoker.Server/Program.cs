@@ -1,3 +1,4 @@
+using MessagePack;
 using PlanningPoker.Server;
 using StackExchange.Redis;
 
@@ -35,6 +36,8 @@ else
 {
     builder.Services.AddTransient<IStore, InMemoryStore>();
 }
+
+signalRBuilder.AddMessagePackProtocol();
 
 builder.Services.AddRazorPages();
 

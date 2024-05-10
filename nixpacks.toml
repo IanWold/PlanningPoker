@@ -1,4 +1,4 @@
 [phases.setup]
   nixpkgsArchive = '9043355e2d6cff70bb31774fbca3c726f3e7bacc'
 [phases.install]
-  cmds = ['dotnet restore', 'dotnet workload restore']
+  cmds = ['dotnet workload restore', 'dotnet restore']

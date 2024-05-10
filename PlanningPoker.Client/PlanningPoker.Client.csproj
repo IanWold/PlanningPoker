@@ -8,6 +8,8 @@
 		<InvariantGlobalization>true</InvariantGlobalization>
 		<DebuggerSupport>true</DebuggerSupport>
 		<CopyOutputSymbolsToPublishDirectory>true</CopyOutputSymbolsToPublishDirectory>
+		<RunAOTCompilation>true</RunAOTCompilation>
+		<WasmStripILAfterAOT>true</WasmStripILAfterAOT>
 	</PropertyGroup>
 
 	<ItemGroup>

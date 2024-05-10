@@ -1,4 +1,3 @@
-using MessagePack;
 using PlanningPoker.Server;
 using StackExchange.Redis;
 

@@ -6,7 +6,7 @@ using Microsoft.JSInterop;
 namespace PlanningPoker.Client;
 
 #pragma warning disable CS4014 // Task.Run fire-and-forget
-public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : ISessionHubClient, IDisposable
+public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime, ToastState toast) : ISessionHubClient, IDisposable
 {
     #region Internal State
 
@@ -268,9 +268,16 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     {
         await EnsureInitialized();
 
+        name = await DecryptAsync(name);
+
         Session = Session! with {
-            Participants = [.. Session!.Participants, new(participantId, await DecryptAsync(name), "", 0)]
+            Participants = [.. Session!.Participants, new(participantId, name, "", 0)]
         };
+
+        if (participantId != _participantId)
+        {
+            toast.Add($"{name} has joined!");
+        }
 
         NotifyUpdate();
     }
@@ -278,13 +285,21 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task OnParticipantNameUpdated(string participantId, string name)
     {
         await EnsureInitialized();
+
+        name = await DecryptAsync(name);
+        var previousName = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
         
         Session = Session! with {
             Participants = [
                 .. Session!.Participants.Where(p => p.ParticipantId != participantId),
-                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = await DecryptAsync(name) }
+                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = name }
             ]
         };
+
+        if (participantId != _participantId)
+        {
+            toast.Add($"{previousName} changed their name to {name}");
+        }
 
         NotifyUpdate();
     }
@@ -311,12 +326,19 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     {
         await EnsureInitialized();
 
+        var name = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
+
         Session = Session! with {
             Participants =
                 Session!.Participants
                 .Where(p => p.ParticipantId != participantId)
                 .ToList()
         };
+
+        if (participantId != _participantId)
+        {
+            toast.Add($"{name} has left");
+        }
 
         NotifyUpdate();
     }

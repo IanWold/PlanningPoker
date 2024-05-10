@@ -5,6 +5,15 @@ namespace PlanningPoker.Server;
 #pragma warning disable CS4014 // Task.Run fire-and-forget
 public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
 {
+    public async Task AddEffectAsync(string sessionId, EffectType effectType, string targetParticipantId)
+    {
+        var effect = new Effect(effectType, Context.ConnectionId, targetParticipantId);
+
+        Task.Run(async () => await store.AddEffectAsync(sessionId, effect));
+
+        await Clients.Group(sessionId).OnEffectAdded(effect);
+    }
+
     public async Task AddPointAsync(string sessionId, string point)
     {
         Task.Run(async () => await store.AddPointAsync(sessionId, point));
@@ -59,6 +68,13 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub
         Task.Run(async () => await store.DeleteParticipantAsync(sessionId, Context.ConnectionId));
 
         await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
+    }
+
+    public async Task RemoveEffectAsync(string sessionId, Effect effect)
+    {
+        Task.Run(async () => await store.RemoveEffectAsync(sessionId, effect));
+
+        await Clients.Group(sessionId).OnEffectRemoved(effect);
     }
 
     public async Task RemovePointAsync(string sessionId, string point)

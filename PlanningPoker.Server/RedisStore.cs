@@ -1,10 +1,17 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using StackExchange.Redis;
 
 namespace PlanningPoker.Server;
 
 public class RedisStore(IDatabase database) : IStore
 {
+    public async Task AddEffectAsync(string sessionId, Effect effect)
+    {
+        await database.ListRightPushAsync($"{sessionId}:effects", JsonSerializer.Serialize(effect), flags: CommandFlags.FireAndForget);
+        await database.HashDecrementAsync($"{sessionId}:participants:{effect.SenderParticipantId}", nameof(Participant.Stars), effect.Type.GetCost(), flags: CommandFlags.FireAndForget);
+    }
+
     public async Task AddPointAsync(string sessionId, string point) =>
         await database.ListRightPushAsync($"{sessionId}:points", point, flags: CommandFlags.FireAndForget);
 
@@ -79,8 +86,9 @@ public class RedisStore(IDatabase database) : IStore
     {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
 
-        var session = new Session("", [], State.Hidden, []);
+        var session = new Session("", [], State.Hidden, [], []);
         var participants = new ConcurrentBag<Participant>();
+        var effects = Enumerable.Empty<Effect>();
         var points = Enumerable.Empty<string>();
 
         Task[] readTasks = [
@@ -92,12 +100,18 @@ public class RedisStore(IDatabase database) : IStore
                             Title: s.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
                             Participants: [],
                             State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!),
-                            Points: []
+                            Points: [],
+                            Effects: []
                         )
                         : null
                 ),
+
             database.ListRangeAsync($"{sessionId}:points")
                 .ContinueWith(p => points = p?.Result?.Select(v => (string)v!)?.ToArray() ?? []),
+
+            database.ListRangeAsync($"{sessionId}:effects")
+                .ContinueWith(e => effects = e?.Result?.Select(effect => JsonSerializer.Deserialize<Effect>(effect!)!).ToArray() ?? []),
+
             ..participantIds.Select(i =>
                 database
                     .HashGetAllAsync($"{sessionId}:participants:{i}")
@@ -119,7 +133,8 @@ public class RedisStore(IDatabase database) : IStore
             session = session with
             {
                 Participants = [.. participants],
-                Points = points
+                Points = points,
+                Effects = effects
             };
         }
 
@@ -128,6 +143,12 @@ public class RedisStore(IDatabase database) : IStore
 
     public async Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1) =>
         await database.HashIncrementAsync($"{sessionId}:participants:{participantId}", nameof(Participant.Stars), count, flags: CommandFlags.FireAndForget);
+
+    public async Task RemoveEffectAsync(string sessionId, Effect effect)
+    {
+        await database.ListRemoveAsync($"{sessionId}:effects", JsonSerializer.Serialize(effect), 1, flags: CommandFlags.FireAndForget);
+        await database.HashDecrementAsync($"{sessionId}:participants:{effect.TargetParticipantId}", nameof(Participant.Stars), effect.Type.GetCost(), flags: CommandFlags.FireAndForget);
+    }
 
     public async Task RemovePointAsync(string sessionId, string point) =>
         await database.ListRemoveAsync($"{sessionId}:points", point, flags: CommandFlags.FireAndForget);

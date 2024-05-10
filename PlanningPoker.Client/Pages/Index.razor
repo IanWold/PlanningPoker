@@ -43,7 +43,7 @@
                     <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-west">🏜️ Wild West</label>
                 </div>
 
-                <button class="btn btn-primary mt-2 w-100" type="submit" disabled="@(IsLoading)">Start Planning</button>
+                <button class="btn btn-primary btn-loadable mt-2 w-100" type="submit" disabled="@(IsLoading)">Start Planning</button>
             </form>
 
             @if (!string.IsNullOrEmpty(ErrorMessage))

@@ -6,7 +6,7 @@
         <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
             <form class="d-flex gap-2 w-100" @onsubmit=OnJoinClicked>
                 <input type="text" class="form-control" placeholder="Enter your name to join the session" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Name>
-                <button class="btn btn-primary" type="submit" disabled="@(IsLoading)">Join</button>
+                <button class="btn btn-primary btn-loadable" type="submit" disabled="@(IsLoading)">Join</button>
             </form>
 
             @if (!string.IsNullOrEmpty(ErrorMessage))

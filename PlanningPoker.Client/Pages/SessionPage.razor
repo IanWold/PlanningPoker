@@ -14,6 +14,10 @@
 }
 else
 {
+    var isFlipped = _state.SelfEffects.Any(e => e.Type == EffectType.Flip);
+    var beerBlur = _state.SelfEffects.Count(e => e.Type == EffectType.Beer);
+
+    <ToastComponent />
     <JoinFormComponent />
 
     @if (IsEditingTitle)
@@ -23,7 +27,7 @@ else
                 <form class="d-flex gap-2 w-100" @onsubmit=OnSaveTitleClicked>
                     <input type="text" class="form-control" placeholder="Enter a title for the session" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Title>
                     <button class="btn border-0 btn-outline-success" type="submit" disabled="@(IsLoading)"><ion-icon name="checkmark-sharp"></ion-icon></button>
-                    <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-secondary btn-loadable" disabled="@(IsLoading)" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
 
                 @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -43,7 +47,7 @@ else
                 <form class="d-flex gap-2 w-100" @onsubmit=OnSaveNameClicked>
                     <input type="text" class="form-control" placeholder="Enter your name" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Name>
                     <button class="btn border-0 btn-outline-success" type="submit" disabled="@(IsLoading)"><ion-icon name="checkmark-sharp"></ion-icon></button>
-                    <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-secondary btn-loadable" disabled="@(IsLoading)" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
 
                 @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -58,7 +62,7 @@ else
 
     <ShareNotificationComponent />
 
-    <div class="session" style="@(IsContentBlurred ? "filter: blur(1px)" : "")">
+    <div class="session" style="@(IsContentBlurred ? "filter: blur(1px);" : "") @(isFlipped ? "transform: rotateX(180deg);" : "") @(beerBlur > 0 ? $"filter: blur({beerBlur}px);" : "")">
         <div class="card m-3 shadow-sm border-0" style="grid-area: header; width: 600px;">
             <div class="card-body p-2">
                 <div class="d-flex gap-2 w-100 justify-content-between">
@@ -71,16 +75,15 @@ else
         <AddComponent />
         <ToggleColorModeComponent />
 
-
         <div style="grid-area: main">
             <CenterTableComponent />
         </div>
 
         <div style="grid-area: footer;">
-            
-                <PointSelectionComponent />
+            <PointSelectionComponent />
         </div>
 
+       <ActiveEffectsComponent /> 
         <HelpComponent />
     </div>
 }

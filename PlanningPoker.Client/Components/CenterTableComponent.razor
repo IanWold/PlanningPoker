@@ -13,32 +13,50 @@
     @for (int i = 0; i < _state.Others.Count(); i++)
     {
         var participantId = _state.Others.ElementAt(i).ParticipantId;
+        var effects = new ParticipantEffects(_state.Session!.Effects.Where(e => e.TargetParticipantId == participantId));
 
-        <div class="stat" id="@(participantId)" style="--i:@(i + 1)">
-            <label>
-                @(_state.Others.ElementAt(i).Name)
-                @if (_state.Others.ElementAt(i).Stars > 0)
-                {
-                    <span>⭐ @(_state.Others.ElementAt(i).Stars)</span>
-                }
-            </label>
+        <div class="stat" id="@(participantId)" style="--i:@(i + 1);">
+            <div class="d-flex flex-column align-items-center" style="@effects.FlipStyle">
+                <label style="@effects.BeerStyle">
+                    @(_state.Others.ElementAt(i).Name)
+                    @if (_state.Others.ElementAt(i).Stars > 0)
+                    {
+                        <span>⭐ @(_state.Others.ElementAt(i).Stars)</span>
+                    }
+                </label>
 
-            <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points))
-                {
-                    <span>@_state.Others.ElementAt(i).Points</span>
-                }
-            </div>
+                <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white" style="@effects.BeerStyle">
+                    @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points))
+                    {
+                        <span>@_state.Others.ElementAt(i).Points</span>
+                    }
+                </div>
 
-            <div class="btn-option btn-like">
-                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(async () => await _state.SendStarToParticipantAsync(participantId))"><ion-icon name="star-sharp"></ion-icon></button>
+                <div class="card p-1 options-card rounded-pill">
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(async () => await _state.SendStarToParticipantAsync(participantId))"><ion-icon name="star-sharp" style="padding-left: 1px;"></ion-icon></button>
+                    <div class="dropdown-center d-inline">
+                        <a class="btn btn-sm btn-outline-info" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <ion-icon name="sparkles-sharp" style="padding-top: 1px; padding-left: 1px;"></ion-icon>
+                        </a>
+
+                        <div class="dropdown-menu p-1 rounded-pill" style="min-width: 0; flex-direction: row;">
+                            @if (_state.Self is not null)
+                            {
+                                @foreach (var effectType in Enum.GetValues<EffectType>().Cast<EffectType>())
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-info" disabled=@(_state.Self.Stars < effectType.GetCost()) @onclick="@(async () => await _state.AddEffectAsync(effectType, participantId))"><ion-icon name="@(effectType.GetIcon())-sharp"></ion-icon></button>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     }
     
     @if (_state.Self is not null)
     {
-        <div class="stat" style="--i:@(_state.Session.Participants.Count())" id="@(_state.Self.ParticipantId)">
+        <div class="stat d-flex flex-column align-items-center" style="--i:@(_state.Session.Participants.Count())" id="@(_state.Self.ParticipantId)">
             <label>
                 @(_state.Self.Name)
                 @if (_state.Self.Stars > 0)
@@ -58,6 +76,25 @@
 </div>
 
 @code {
+    record ParticipantEffects(IEnumerable<Effect> Effects)
+    {
+        public bool this[EffectType effectType] =>
+            Effects.Any(e => e.Type == effectType);
+
+        public string BeerStyle => _beerStyle ??=
+            Effects.Count(e => e.Type == EffectType.Beer) is int beerCount
+            && beerCount > 0
+                ? $"filter: blur({beerCount}px);"
+                : string.Empty;
+        string? _beerStyle;
+
+        public string FlipStyle => _flipStyle ??=
+            this[EffectType.Flip]
+                ? "transform: rotateX(180deg);"
+                : string.Empty;
+        string? _flipStyle;
+    }
+
     protected override void OnInitialized()
     {
         _state.OnStateChanged += (o, e) => StateHasChanged();

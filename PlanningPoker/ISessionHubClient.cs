@@ -2,6 +2,8 @@
 
 public interface ISessionHubClient
 {
+    Task OnEffectAdded(Effect effect);
+    Task OnEffectRemoved(Effect effect);
     Task OnParticipantAdded(string participantId, string name);
     Task OnParticipantNameUpdated(string participantId, string name);
     Task OnParticipantPointsUpdated(string participantId, string points);

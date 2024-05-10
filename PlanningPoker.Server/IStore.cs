@@ -2,6 +2,7 @@ namespace PlanningPoker.Server;
 
 public interface IStore
 {
+    Task AddEffectAsync(string sessionId, Effect effect);
     Task AddPointAsync(string sessionId, string point);
     Task CreateParticipantAsync(string sessionId, string participantId, string name);
     Task<string> CreateSessionAsync(string title, IEnumerable<string> points);
@@ -9,6 +10,7 @@ public interface IStore
     Task<bool> ExistsSessionAsync(string sessionId);
     Task<Session?> GetSessionAsync(string sessionId);
     Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1);
+    Task RemoveEffectAsync(string sessionId, Effect effect);
     Task RemovePointAsync(string sessionId, string point);
     Task UpdateAllParticipantPointsAsync(string sessionId, string points = "");
     Task UpdateParticipantNameAsync(string sessionId, string participantId, string name);

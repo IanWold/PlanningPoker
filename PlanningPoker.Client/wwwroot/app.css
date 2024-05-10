@@ -161,10 +161,6 @@ button.hidden-icon:hover ion-icon {
 .stat {
     grid-area: layer;
 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
     font-weight: bold;
 
     --d: calc(var(--i) / var(--total));
@@ -198,26 +194,24 @@ button.hidden-icon:hover ion-icon {
         }
     }
 
-    .btn-option {
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-        background-color: white;
+    .options-card {
         margin-top: -16px;
 
         display: none;
 
-        button.btn-sm {
+        .btn-sm {
+            border: 0;
             border-radius: 50%;
             width: 32px;
             height: 32px;
 
-            padding-top: 3px;
+            padding: 0;
+            font-size: 14pt;
         }
     }
 }
 
-.stat:hover .btn-option {
+.stat:hover .options-card {
     display: block;
 }
 
@@ -241,7 +235,7 @@ button.hidden-icon:hover ion-icon {
     display: none;
 }
 
-button:disabled, button[disabled] {
+.btn-loadable:disabled, .btn-loadable[disabled] {
     background-image: 
       repeating-linear-gradient(
         -45deg, 
@@ -266,14 +260,14 @@ button:disabled, button[disabled] {
         opacity: 1;
     }
     100% {
-        transform: translateY(-50px); /* Adjust distance as needed */
+        transform: translateY(-50px);
         opacity: 0;
     }
 }
 
 .star {
     position: absolute;
-    animation: floatAndFade 2s ease-out forwards; /* Adjust timing as needed */
+    animation: floatAndFade 2s ease-out forwards;
 }
 
 text {
@@ -282,6 +276,35 @@ text {
 
 path {
     stroke: var(--bs-dark) !important;
+}
+
+.tooltipped {
+    position: relative;
+}
+
+.tooltipped::before, .tooltipped::after {
+    position: absolute;
+    left: 50%;
+    opacity: 0;
+    transition: all ease 0.3s;
+}
+
+.tooltipped:hover::before, .tooltipped:hover::after {
+    opacity: 1;
+}
+
+.tooltipped::before {
+    content: "";
+    border-width: 10px 8px 0 8px;
+    border-style: solid;
+    border-color: var(--bs-dark) transparent transparent transparent;
+}
+
+.tooltipped::after {
+    content: attr(data-tooltip);
+    background: var(--bs-dark);
+    transform: translateY(-100%) translateX(-50%);
+
 }
 
 [data-bs-theme="dark"] {

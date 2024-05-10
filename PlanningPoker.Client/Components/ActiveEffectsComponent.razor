@@ -1,0 +1,26 @@
+﻿@inject SessionState _state
+
+<div class="m-3" style="position: absolute; bottom: 0; left: 0;">
+    <div class="d-flex gap-2 m-2">
+        @foreach (var effectGroup in _state.SelfEffects.GroupBy(e => e.Type))
+        {
+            <button type="button" class="btn btn-square btn-outline-info border-0 tooltipped" data-tooltip="Hello!" disabled=@(_state.Self?.Stars < effectGroup.Key.GetCost()) @onclick="@(async () => await _state.RemoveEffectAsync(effectGroup.First()))">
+                <ion-icon name="@(effectGroup.Key.GetIcon())-sharp"></ion-icon>
+                @if (effectGroup.Count() > 1)
+                {
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary">
+                        @effectGroup.Count()
+                        <span class="visually-hidden">effect count</span>
+                    </span>
+                }
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        _state.OnStateChanged += (o, e) => StateHasChanged();
+    }
+}

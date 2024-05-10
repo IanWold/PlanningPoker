@@ -1,12 +1,11 @@
-﻿using MessagePack;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
 namespace PlanningPoker.Client;
 
 #pragma warning disable CS4014 // Task.Run fire-and-forget
-public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : ISessionHubClient, IDisposable
+public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime, ToastState toasts) : ISessionHubClient, IDisposable
 {
     #region Internal State
 
@@ -34,6 +33,9 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         _participantId is null
         ? null
         : Session?.Participants?.FirstOrDefault(p => p.ParticipantId == _participantId);
+
+    public IEnumerable<Effect> SelfEffects =>
+        Session?.Effects?.Where(e => e.TargetParticipantId == _participantId) ?? [];
 
     public IEnumerable<Participant> Others =>
         Session?.Participants?.Where(p => p.ParticipantId != _participantId) ?? [];
@@ -79,6 +81,16 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
     }
 
+    public async Task AddEffectAsync(EffectType effectType, string targetParticipantId)
+    {
+        if (Self!.Stars < effectType.GetCost())
+        {
+            return;
+        }
+
+        await _server!.AddEffectAsync(_sessionId!, effectType, targetParticipantId);
+    }
+
     public async Task AddPointAsync(string point)
     {
         point = point.Trim();
@@ -100,7 +112,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         _encryptionKey = await jsRuntime.InvokeAsync<string>("getEncryptionKey") ?? string.Empty;
 
         _sessionId = await _server!.CreateSessionAsync(await EncryptAsync(title), pointValues);
-        Session = new(title, [], State.Hidden, pointValues);
+        Session = new(title, [], State.Hidden, pointValues, []);
         ShowShareNotification = true;
 
         await JoinAsync(name);
@@ -190,6 +202,13 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
+    public async Task RemoveEffectAsync(Effect effect)
+    {
+        await EnsureInitialized();
+
+        Task.Run(async () => await _server!.RemoveEffectAsync(_sessionId!, effect));
+    }
+
     public async Task RemovePointAsync(string point)
     {
         await EnsureInitialized();
@@ -263,6 +282,45 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     }
 
     #region ISessionHubClient Implementation
+
+    public async Task OnEffectAdded(Effect effect)
+    {
+        await EnsureInitialized();
+
+        var sender = Session!.Participants.Single(p => p.ParticipantId == effect.SenderParticipantId);
+        Session = Session! with {
+            Effects = [.. Session!.Effects, effect],
+            Participants = [.. Session!.Participants.Except([sender]), sender with { Stars = sender.Stars - effect.Type.GetCost() }]
+        };
+
+        var senderName =
+            effect.SenderParticipantId == _participantId
+            ? "You"
+            : Session!.Participants.Single(p => p.ParticipantId == effect.SenderParticipantId).Name;
+
+        var targetName = 
+            effect.TargetParticipantId == _participantId
+            ? "you"
+            : Session!.Participants.Single(p => p.ParticipantId == effect.TargetParticipantId).Name;
+
+        toasts.Add($"{senderName} {effect.Type.GetVerb()} {targetName}");
+
+        NotifyUpdate();
+    }
+
+    public async Task OnEffectRemoved(Effect effect)
+    {
+        await EnsureInitialized();
+        
+        var isFirstEffectRemoved = false;
+        var target = Session!.Participants.Single(p => p.ParticipantId == effect.TargetParticipantId);
+        Session = Session! with {
+            Effects = Session!.Effects.Where(e => !(!isFirstEffectRemoved && (isFirstEffectRemoved = e == effect))).ToArray(),
+            Participants = [.. Session!.Participants.Except([target]), target with { Stars = target.Stars - effect.Type.GetCost() }]
+        };
+
+        NotifyUpdate();
+    }
 
     public async Task OnParticipantAdded(string participantId, string name)
     {

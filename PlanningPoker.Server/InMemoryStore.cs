@@ -17,14 +17,25 @@ public class InMemoryStore : IStore
         return UpdateSession(sessionId, session => session with { Participants = [ ..session.Participants.Except([participant]), update(participant!) ] });
     }
 
-    public Task CreateParticipantAsync(string sessionId, string participantId, string name) =>
+    public Task AddEffectAsync(string sessionId, Effect effect)
+    {
         UpdateSession(sessionId, session => session with {
-            Participants = [..session.Participants, new(participantId, name, "", 0) ]
+            Effects = [..session.Effects, effect]
         });
+
+        return UpdateParticipant(sessionId, effect.SenderParticipantId, participant => participant with {
+            Stars = participant.Stars - effect.Type.GetCost()
+        });
+    }
 
     public Task AddPointAsync(string sessionId, string point) =>
         UpdateSession(sessionId, session => session with {
             Points = [..session.Points, point]
+        });
+
+    public Task CreateParticipantAsync(string sessionId, string participantId, string name) =>
+        UpdateSession(sessionId, session => session with {
+            Participants = [..session.Participants, new(participantId, name, "", 0) ]
         });
 
     public Task<string> CreateSessionAsync(string title, IEnumerable<string> points)
@@ -37,7 +48,7 @@ public class InMemoryStore : IStore
         }
         while (_sessions.ContainsKey(newSessionId));
 
-        _sessions.Add(newSessionId, new(title, [], State.Hidden, points));
+        _sessions.Add(newSessionId, new(title, [], State.Hidden, points, []));
 
         return Task.FromResult(newSessionId);
     }
@@ -57,6 +68,18 @@ public class InMemoryStore : IStore
         UpdateParticipant(sessionId, participantId, participant => participant with {
             Stars = participant.Stars + count
         });
+
+    public Task RemoveEffectAsync(string sessionId, Effect effect)
+    {
+        var isFirstEffectRemoved = false;
+        UpdateSession(sessionId, session => session with {
+            Effects = session.Effects.Where(e => !(!isFirstEffectRemoved && (isFirstEffectRemoved = e == effect))).ToArray()
+        });
+
+        return UpdateParticipant(sessionId, effect.TargetParticipantId, participant => participant with {
+            Stars = participant.Stars - effect.Type.GetCost()
+        });
+    }
 
     public Task RemovePointAsync(string sessionId, string point) =>
         UpdateSession(sessionId, session => session with {

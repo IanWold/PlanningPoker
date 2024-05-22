@@ -6,8 +6,8 @@
 }
 
 @if (IsEditing)
-{
-    <div class="m-3 d-flex gap-2" style="padding-left: 132px;">
+{ 
+    <div class="m-3 d-flex gap-2 align-items-center" style="padding-left: 126px;">
         <div class="card w-auto shadow-sm border-0">
             <div class="card-body p-2">
                 <div class="d-flex gap-2 justify-content-between">
@@ -22,9 +22,9 @@
             </div>
         </div>
 
-        <form class="d-flex gap-2 my-2" @onsubmit=OnAddClicked>
-            <input type="text" class="form-control p-0" style="width: 36px; text-align: center;" disabled="@(IsLoading)" required maxlength="3" pattern="(.|\s)*\S(.|\s)*" @bind-value=PointToAdd>
-            <button class="btn border-0 btn-outline-success" style="width: 36px; padding-left: 10px;" type="submit" disabled="@(IsLoading)"><ion-icon name="add-sharp"></ion-icon></button>
+        <form class="d-flex form-control p-0 w-auto" @onsubmit=OnAddClicked>
+            <input type="text" class="form-control p-0 border-0 border-end rounded-end-0" style="width: 36px; text-align: center;" disabled="@(IsLoading)" required maxlength="3" pattern="(.|\s)*\S(.|\s)*" @bind-value=PointToAdd>
+            <button class="btn border-0 btn-outline-success btn-loadable rounded-start-0" style="width: 36px; padding-left: 10px;" type="submit" disabled="@(IsLoading)"><ion-icon name="add-sharp"></ion-icon></button>
         </form>
 
         <button class="btn btn-square btn-outline-secondary border-0 my-2" @onclick=OnCLoseEditClicked><ion-icon name="close-sharp"></ion-icon></button>

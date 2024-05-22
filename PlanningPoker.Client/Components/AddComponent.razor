@@ -7,9 +7,9 @@
     </button>
     <div class="dropdown-menu mt-3 shadow border-0">
         <h6 class="dropdown-header"><ion-icon name="person-add-sharp" style="margin-bottom: -2px;"></ion-icon> Invite a participant</h6>
-        <div class="input-group px-3 pb-2" style="width: 675px;">
-            <input type="email" class="form-control" disabled value="@(_state.SessionUrl)">
-            <button class="btn btn-outline-secondary" type="button" @onclick="@(async () => await _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _state.SessionUrl))"><ion-icon name="clipboard-sharp"></ion-icon></button>
+        <div class="d-flex form-control p-0 mx-3 mb-2" style="width: 675px; overflow: hidden;">
+            <input type="email" class="form-control border-0 border-end rounded-end-0" disabled value="@(_state.SessionUrl)">
+            <button class="btn border-0 btn-outline-secondary btn-loadable rounded-0" type="button" @onclick="@(async () => await _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _state.SessionUrl))"><ion-icon name="clipboard-sharp"></ion-icon></button>
         </div>
         <div class="dropdown-divider"></div>
         <a class="dropdown-item" href="https://freeplanningpoker.io" target="_blank" rel="noopener noreferrer"><ion-icon name="open-outline" style="margin-bottom: -2px;"></ion-icon> Start a new planning session</a>

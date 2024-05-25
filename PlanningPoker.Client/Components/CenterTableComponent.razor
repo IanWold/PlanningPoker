@@ -1,6 +1,6 @@
 ﻿@inject SessionState _state
 
-<div class="circle bg-secondary-subtle" style="--total: @(_state.Session.Participants.Count()); --radius: @(System.Math.Max(_state.Session.Participants.Count() * 25, 125))px;">
+<div class="circle bg-secondary-subtle" style="--total: @(_state!.Session!.Participants.Count()); --radius: @(System.Math.Max(_state.Session.Participants.Count() * 25, 125))px;">
     @if (_state.Session.State == State.Hidden) {
         <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
     }

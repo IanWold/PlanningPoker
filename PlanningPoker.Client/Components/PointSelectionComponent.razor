@@ -1,6 +1,6 @@
 ﻿@inject SessionState _state
     
-@if (_state.Session.State == State.Revealed) {
+@if (_state!.Session!.State == State.Revealed) {
     <GraphComponent />
 }
 

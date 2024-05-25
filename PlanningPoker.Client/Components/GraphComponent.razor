@@ -6,7 +6,7 @@
             @if (count > 0) {
                 <div>
                     <label class="w-100 text-center fw-bold" style="margin-top: -36px;">@count</label>
-                    <div class="rounded mb-3 bg-secondary shadow" style="width: 36px; height: @(36 + (164 * ((double)count / (double)_state.Session.Participants.Count())))px;"></div>
+                    <div class="rounded mb-3 bg-secondary shadow" style="width: 36px; height: @(36 + (164 * ((double)count / (double)_state!.Session!.Participants.Count())))px;"></div>
                 </div>
             }
             else {

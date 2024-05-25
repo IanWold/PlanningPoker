@@ -1,7 +1,6 @@
 ﻿namespace PlanningPoker;
 
-public interface ISessionHub
-{
+public interface ISessionHub {
     Task AddPointAsync(string sessionId, string point);
     Task<Session> ConnectToSessionAsync(string sessionId);
     Task<string> CreateSessionAsync(string title, IEnumerable<string> points);

@@ -1,18 +1,15 @@
 ﻿@inject SessionState _state
     
-@if (_state.Session.State == State.Revealed)
-{
+@if (_state.Session.State == State.Revealed) {
     <GraphComponent />
 }
 
-@if (IsEditing)
-{ 
+@if (IsEditing) { 
     <div class="m-3 d-flex gap-2 align-items-center" style="padding-left: 126px;">
         <div class="card w-auto shadow-sm border-0">
             <div class="card-body p-2">
                 <div class="d-flex gap-2 justify-content-between">
-                    @foreach (var point in _state.Session.Points)
-                    {
+                    @foreach (var point in _state.Session.Points) {
                         <button class="btn btn-square btn-outline-danger btn-hover-icon" @onclick="@(async () => await OnRemoveClicked(point))">
                             <label>@point</label>
                             <ion-icon name="trash-sharp" role="img" class="md hydrated"></ion-icon>
@@ -30,14 +27,12 @@
         <button class="btn btn-square btn-outline-secondary border-0 my-2" @onclick=OnCLoseEditClicked><ion-icon name="close-sharp"></ion-icon></button>
     </div>
 }
-else
-{
+else {
     <div class="m-3 d-flex" style="padding-left: 52px;">
         <div class="card w-auto shadow-sm border-0">
             <div class="card-body p-2">
                 <div class="d-flex gap-2 justify-content-between">
-                    @foreach (var point in _state.Session.Points)
-                    {
+                    @foreach (var point in _state.Session.Points) {
                         <button class="btn btn-square @(_state.Self?.Points == point ? "btn-primary" : "btn-outline-primary")" @onclick="@(async () => await _state.UpdatePointsAsync(point))">@point</button>
                     }
                 </div>
@@ -55,31 +50,25 @@ else
 
     string PointToAdd { get; set; } = string.Empty;
 
-    protected override void OnInitialized()
-    {
+    protected override void OnInitialized() {
         _state.OnStateChanged += (o, e) => StateHasChanged();
     }
 
-    void OnEditClicked()
-    {
+    void OnEditClicked() {
         PointToAdd = "";
         IsEditing = true;
     }
 
-    void OnCLoseEditClicked()
-    {
+    void OnCLoseEditClicked() {
         IsEditing = false;
     }
 
-    async Task OnAddClicked()
-    {
-        if (!string.IsNullOrWhiteSpace(PointToAdd))
-        {
+    async Task OnAddClicked() {
+        if (!string.IsNullOrWhiteSpace(PointToAdd)) {
             IsLoading = true;
             StateHasChanged();
 
-            try
-            {
+            try {
                 await _state.AddPointAsync(PointToAdd);
             }
             catch { }
@@ -90,13 +79,11 @@ else
         }
     }
 
-    async Task OnRemoveClicked(string point)
-    {
+    async Task OnRemoveClicked(string point) {
         IsLoading = true;
         StateHasChanged();
 
-        try
-        {
+        try {
             await _state.RemovePointAsync(point);
         }
         catch { }

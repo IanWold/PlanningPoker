@@ -1,7 +1,6 @@
 ﻿@inject SessionState _state
 
-@if (_state.Self is null)
-{
+@if (_state.Self is null) {
     <div class="overlay">
         <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
             <form class="d-flex gap-2 w-100" @onsubmit=OnJoinClicked>
@@ -9,8 +8,7 @@
                 <button class="btn btn-primary" type="submit" disabled="@(IsLoading)">Join</button>
             </form>
 
-            @if (!string.IsNullOrEmpty(ErrorMessage))
-            {
+            @if (!string.IsNullOrEmpty(ErrorMessage)) {
                 <div class="alert alert-danger mb-0 mt-3">
                     <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
                 </div>
@@ -26,25 +24,20 @@
 
     bool IsLoading { get; set; }
     
-    protected override void OnInitialized()
-    {
+    protected override void OnInitialized() {
         _state.OnStateChanged += (o, e) => StateHasChanged();
     }
 
-    async Task OnJoinClicked()
-    {
-        if (!string.IsNullOrWhiteSpace(Name))
-        {
+    async Task OnJoinClicked() {
+        if (!string.IsNullOrWhiteSpace(Name)) {
             ErrorMessage = null;
             IsLoading = true;
             StateHasChanged();
 
-            try
-            {
+            try {
                 await _state.JoinAsync(Name);
             }
-            catch
-            {
+            catch {
                 ErrorMessage = "An error occurred while joining the session. Please try again.";
             }
             

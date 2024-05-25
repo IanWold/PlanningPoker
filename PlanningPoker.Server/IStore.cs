@@ -1,7 +1,6 @@
 namespace PlanningPoker.Server;
 
-public interface IStore
-{
+public interface IStore {
     Task AddPointAsync(string sessionId, string point);
     Task CreateParticipantAsync(string sessionId, string participantId, string name);
     Task<string> CreateSessionAsync(string title, IEnumerable<string> points);

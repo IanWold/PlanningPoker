@@ -8,11 +8,10 @@ public class RedisStore(IDatabase database) : IStore
     public async Task AddPointAsync(string sessionId, string point) =>
         await database.ListRightPushAsync($"{sessionId}:points", point, flags: CommandFlags.FireAndForget);
 
-    public async Task CreateParticipantAsync(string sessionId, string participantId, string name)
-    {
+    public async Task CreateParticipantAsync(string sessionId, string participantId, string name) {
         await database.HashSetAsync(
-            $"{sessionId}:participants:{participantId}",
-            [
+            key: $"{sessionId}:participants:{participantId}",
+            hashFields: [
                 new HashEntry(nameof(Participant.Name), name),
                 new HashEntry(nameof(Participant.Points), ""),
                 new HashEntry(nameof(Participant.Stars), 0)
@@ -23,19 +22,18 @@ public class RedisStore(IDatabase database) : IStore
         await database.ListRightPushAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
     }
 
-    public async Task<string> CreateSessionAsync(string title, IEnumerable<string> points)
-    {
+    public async Task<string> CreateSessionAsync(string title, IEnumerable<string> points) {
         string newSessionId;
         bool insertResult;
 
-        do
-        {
+        do {
             newSessionId = Guid.NewGuid().ToString().Split('-').First();
 
             var transaction = database.CreateTransaction();
 
             transaction.AddCondition(Condition.KeyNotExists(newSessionId));
-            var _ = transaction.HashSetAsync(key: newSessionId,
+            var _ = transaction.HashSetAsync(
+                key: newSessionId,
                 hashFields: [
                     new HashEntry(nameof(Session.Title), title),
                     new HashEntry(nameof(Session.State), Enum.GetName(State.Hidden))
@@ -47,10 +45,8 @@ public class RedisStore(IDatabase database) : IStore
         while (!insertResult);
 
 #pragma warning disable CS4014 // Fire and forget
-        Task.Run(async () =>
-        {
-            foreach (var point in points)
-            {
+        Task.Run(async () => {
+            foreach (var point in points) {
                 await database.ListRightPushAsync($"{newSessionId}:points", point);
             }
         });
@@ -59,13 +55,11 @@ public class RedisStore(IDatabase database) : IStore
         return newSessionId;
     }
     
-    public async Task DeleteParticipantAsync(string sessionId, string participantId)
-    {
+    public async Task DeleteParticipantAsync(string sessionId, string participantId) {
         await database.ListRemoveAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
         await database.KeyDeleteAsync($"{sessionId}:participants:{participantId}", flags: CommandFlags.FireAndForget);
 
-        if (await database.ListLengthAsync($"{sessionId}:participants") == 0)
-        {
+        if (await database.ListLengthAsync($"{sessionId}:participants") == 0) {
             await database.KeyDeleteAsync(sessionId, flags: CommandFlags.FireAndForget);
             await database.KeyDeleteAsync($"{sessionId}:participants", flags: CommandFlags.FireAndForget);
             await database.KeyDeleteAsync($"{sessionId}:points", flags: CommandFlags.FireAndForget);
@@ -75,27 +69,27 @@ public class RedisStore(IDatabase database) : IStore
     public async Task<bool> ExistsSessionAsync(string sessionId) =>
         await database.KeyExistsAsync(sessionId);
 
-    public async Task<Session?> GetSessionAsync(string sessionId)
-    {
+    public async Task<Session?> GetSessionAsync(string sessionId) {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
 
-        var session = new Session("", [], State.Hidden, []);
+        Session? session = null;
+
         var participants = new ConcurrentBag<Participant>();
         var points = Enumerable.Empty<string>();
 
         Task[] readTasks = [
             database
                 .HashGetAllAsync(sessionId)
-                .ContinueWith(s =>
-                    s.Result.Length > 0
-                        ? session = new Session(
+                .ContinueWith(s => {
+                    if (s.Result.Length > 0) {
+                        session = new Session(
                             Title: s.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
                             Participants: [],
                             State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!),
                             Points: []
-                        )
-                        : null
-                ),
+                        );
+                    }
+                }),
             database.ListRangeAsync($"{sessionId}:points")
                 .ContinueWith(p => points = p?.Result?.Select(v => (string)v!)?.ToArray() ?? []),
             ..participantIds.Select(i =>
@@ -114,16 +108,13 @@ public class RedisStore(IDatabase database) : IStore
 
         await Task.WhenAll(readTasks);
 
-        if (session is not null)
-        {
-            session = session with
-            {
+        return session switch {
+            Session s => s with {
                 Participants = [.. participants],
                 Points = points
-            };
-        }
-
-        return session;
+            },
+            var n => n
+        };
     }
 
     public async Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1) =>
@@ -132,8 +123,7 @@ public class RedisStore(IDatabase database) : IStore
     public async Task RemovePointAsync(string sessionId, string point) =>
         await database.ListRemoveAsync($"{sessionId}:points", point, flags: CommandFlags.FireAndForget);
 
-    public async Task UpdateAllParticipantPointsAsync(string sessionId, string points = "")
-    {
+    public async Task UpdateAllParticipantPointsAsync(string sessionId, string points = "") {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
         Parallel.ForEach(participantIds, i => database.HashSet($"{sessionId}:participants:{i}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget));
     }

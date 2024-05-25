@@ -1,7 +1,6 @@
 ﻿namespace PlanningPoker;
 
-public enum State
-{
+public enum State {
     Hidden,
     Revealed
 }

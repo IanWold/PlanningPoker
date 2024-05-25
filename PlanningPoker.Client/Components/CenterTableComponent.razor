@@ -1,31 +1,26 @@
 ﻿@inject SessionState _state
 
 <div class="circle bg-secondary-subtle" style="--total: @(_state.Session.Participants.Count()); --radius: @(System.Math.Max(_state.Session.Participants.Count() * 25, 125))px;">
-    @if (_state.Session.State == State.Hidden)
-    {
+    @if (_state.Session.State == State.Hidden) {
         <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
     }
-    else
-    {
+    else {
         <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Hidden))"><ion-icon name="sync"></ion-icon></button>
     }
 
-    @for (int i = 0; i < _state.Others.Count(); i++)
-    {
+    @for (int i = 0; i < _state.Others.Count(); i++) {
         var participantId = _state.Others.ElementAt(i).ParticipantId;
 
         <div class="stat" id="@(participantId)" style="--i:@(i + 1)">
             <label>
                 @(_state.Others.ElementAt(i).Name)
-                @if (_state.Others.ElementAt(i).Stars > 0)
-                {
+                @if (_state.Others.ElementAt(i).Stars > 0) {
                     <span>⭐ @(_state.Others.ElementAt(i).Stars)</span>
                 }
             </label>
 
             <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points))
-                {
+                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points)) {
                     <span>@_state.Others.ElementAt(i).Points</span>
                 }
             </div>
@@ -36,20 +31,17 @@
         </div>
     }
     
-    @if (_state.Self is not null)
-    {
+    @if (_state.Self is not null) {
         <div class="stat" style="--i:@(_state.Session.Participants.Count())" id="@(_state.Self.ParticipantId)">
             <label>
                 @(_state.Self.Name)
-                @if (_state.Self.Stars > 0)
-                {
+                @if (_state.Self.Stars > 0) {
                     <span>⭐ @(_state.Self.Stars)</span>
                 }
             </label>
 
             <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points))
-                {
+                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points)) {
                     <span>@_state.Self.Points</span>
                 }
             </div>
@@ -58,8 +50,7 @@
 </div>
 
 @code {
-    protected override void OnInitialized()
-    {
+    protected override void OnInitialized() {
         _state.OnStateChanged += (o, e) => StateHasChanged();
     }
 }

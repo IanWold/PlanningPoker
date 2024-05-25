@@ -2,8 +2,7 @@
 
 namespace PlanningPoker.Client;
 
-public static partial class HubConnectionExtensions
-{
+public static partial class HubConnectionExtensions {
     [HubClientProxy]
     public static partial IDisposable ClientRegistration<T>(this HubConnection connection, T provider);
 

@@ -1,8 +1,7 @@
 ﻿@inject ToastState _state
 
 <div style="position: absolute; top: 84px !important; right: 24px !important;">
-    @foreach (var toast in _state.Toasts)
-    {
+    @foreach (var toast in _state.Toasts) {
         <div class="toast align-items-center text-bg-info border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body">
@@ -15,9 +14,7 @@
 </div>
 
 @code {
-
-    protected override async Task OnInitializedAsync()
-    {
+    protected override void OnInitialized() {
         _state.OnStateChanged += (o, e) => StateHasChanged();
     }
 }

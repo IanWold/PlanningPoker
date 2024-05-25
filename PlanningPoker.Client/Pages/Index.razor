@@ -46,8 +46,7 @@
                 <button class="btn btn-primary mt-2 w-100" type="submit" disabled="@(IsLoading)">Start Planning</button>
             </form>
 
-            @if (!string.IsNullOrEmpty(ErrorMessage))
-            {
+            @if (!string.IsNullOrEmpty(ErrorMessage)) {
                 <div class="alert alert-danger mb-0 mt-3">
                     <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
                 </div>
@@ -95,28 +94,23 @@
 
     string PointValueTemplate { get; set; } = "fibonacci";
 
-    async Task OnStartPlanningClicked()
-    {
-        if (!string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Name))
-        {
+    async Task OnStartPlanningClicked() {
+        if (!string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Name)) {
             IsLoading = true;
             ErrorMessage = null;
             StateHasChanged();
 
-            string[] pointValues = PointValueTemplate switch
-            {
+            string[] pointValues = PointValueTemplate switch {
                 "powers" => [ "1", "2", "4", "8", "16", "32", "∞", "?" ],
                 "tshirt" => [ "XS", "S", "M", "L", "XL", "?" ],
                 "west" => [ "🤠", "🐎", "🌵", "💰", "🪕", "🐄", "🔥", "🥩" ],
                 _ => [ "½", "1", "2", "3", "5", "8", "∞", "?" ]
             };
 
-            try
-            {
+            try {
                 await _state.CreateAsync(Title, Name, pointValues);
             }
-            catch
-            {
+            catch {
                 ErrorMessage = "An error occurred while creating your session. Please try again.";
             }
 

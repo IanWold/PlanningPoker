@@ -6,19 +6,16 @@
 
 <PageTitle>@(_state.Session?.Title ?? "Session")</PageTitle>
 
-@if (_state.Session is null)
-{
+@if (_state.Session is null) {
     <div class="spinner-border" style="position: absolute; left: 50%; top: 50%; margin-top:-3rem; margin-left: -3rem; width: 6rem; height: 6rem;" role="status">
         <span class="visually-hidden">Loading...</span>
     </div>
 }
-else
-{
+else {
     <ToastComponent />
     <JoinFormComponent />
 
-    @if (IsEditingTitle)
-    {
+    @if (IsEditingTitle) {
         <div class="overlay">
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <form class="d-flex gap-2 w-100" @onsubmit=OnSaveTitleClicked>
@@ -27,8 +24,7 @@ else
                     <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
 
-                @if (!string.IsNullOrEmpty(ErrorMessage))
-                {
+                @if (!string.IsNullOrEmpty(ErrorMessage)) {
                     <div class="alert alert-danger mb-0 mt-3">
                         <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
                     </div>
@@ -37,8 +33,7 @@ else
         </div>
     }
 
-    @if (IsEditingName)
-    {
+    @if (IsEditingName) {
         <div class="overlay">
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <form class="d-flex gap-2 w-100" @onsubmit=OnSaveNameClicked>
@@ -47,8 +42,7 @@ else
                     <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
 
-                @if (!string.IsNullOrEmpty(ErrorMessage))
-                {
+                @if (!string.IsNullOrEmpty(ErrorMessage)) {
                     <div class="alert alert-danger mb-0 mt-3">
                         <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
                     </div>
@@ -109,54 +103,45 @@ else
         || IsEditingTitle
         || IsEditingName;
 
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync() {
         _state.OnStateChanged += (o, e) => StateHasChanged();
         await _state.LoadAsync(SessionId);
     }
 
-    void OnEditTitleClicked()
-    {
+    void OnEditTitleClicked() {
         ErrorMessage = null;
-        Title = _state.Session.Title;
+        Title = _state!.Session!.Title;
         IsEditingTitle = true;
         StateHasChanged();
     }
 
-    void OnEditNameClicked()
-    {
+    void OnEditNameClicked() {
         ErrorMessage = null;
         Name = _state.Self!.Name;
         IsEditingName = true;
         StateHasChanged();
     }
 
-    void OnCloseEditTitleModalClicked()
-    {
+    void OnCloseEditTitleModalClicked() {
         ErrorMessage = null;
         IsEditingTitle = false;
     }
 
-    void OnCloseEditNameModalClicked()
-    {
+    void OnCloseEditNameModalClicked() {
         ErrorMessage = null;
         IsEditingName = false;
     }
 
-    async Task OnSaveTitleClicked()
-    {
-        if (!string.IsNullOrWhiteSpace(Title))
-        {
+    async Task OnSaveTitleClicked() {
+        if (!string.IsNullOrWhiteSpace(Title)) {
             ErrorMessage = null;
             IsLoading = true;
             StateHasChanged();
 
-            try
-            {
+            try {
                 await _state.UpdateTitleAsync(Title);
             }
-            catch
-            {
+            catch {
                 ErrorMessage = "An error occurred while updating the title. Please try again.";
             }
 
@@ -166,20 +151,16 @@ else
         }
     }
 
-    async Task OnSaveNameClicked()
-    {
-        if (!string.IsNullOrWhiteSpace(Name))
-        {
+    async Task OnSaveNameClicked() {
+        if (!string.IsNullOrWhiteSpace(Name)) {
             ErrorMessage = null;
             IsLoading = true;
             StateHasChanged();
 
-            try
-            {
+            try {
                 await _state.UpdateNameAsync(Name);
             }
-            catch
-            {
+            catch {
                 ErrorMessage = "An error occurred while updating your name. Please try again.";
             }
 

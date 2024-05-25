@@ -1,7 +1,6 @@
 ﻿namespace PlanningPoker;
 
-public interface ISessionHubClient
-{
+public interface ISessionHubClient {
     Task OnParticipantAdded(string participantId, string name);
     Task OnParticipantNameUpdated(string participantId, string name);
     Task OnParticipantPointsUpdated(string participantId, string points);

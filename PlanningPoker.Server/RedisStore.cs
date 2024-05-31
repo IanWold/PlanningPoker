@@ -20,6 +20,9 @@ public class RedisStore(IDatabase database) : IStore
         );
 
         await database.ListRightPushAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
+
+        await database.KeyExpireAsync($"{sessionId}:participants:{participantId}", DateTime.UtcNow.AddDays(1), flags: CommandFlags.FireAndForget);
+        await database.KeyExpireAsync($"{sessionId}:participants:", DateTime.UtcNow.AddDays(1), when: ExpireWhen.HasNoExpiry, flags: CommandFlags.FireAndForget);
     }
 
     public async Task<string> CreateSessionAsync(string title, IEnumerable<string> points) {
@@ -51,6 +54,9 @@ public class RedisStore(IDatabase database) : IStore
             }
         });
 #pragma warning restore CS4014
+
+        await database.KeyExpireAsync($"{newSessionId}", DateTime.UtcNow.AddDays(1), flags: CommandFlags.FireAndForget);
+        await database.KeyExpireAsync($"{newSessionId}:points", DateTime.UtcNow.AddDays(1), flags: CommandFlags.FireAndForget);
 
         return newSessionId;
     }

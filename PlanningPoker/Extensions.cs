@@ -1,4 +1,4 @@
-namespace PlanningPoker.Server;
+namespace PlanningPoker;
 
 public static class Extensions {
     public static void Forget(this Task task) {

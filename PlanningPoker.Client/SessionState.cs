@@ -1,11 +1,9 @@
-﻿using MessagePack;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
 namespace PlanningPoker.Client;
 
-#pragma warning disable CS4014 // Task.Run fire-and-forget
 public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime, ToastState toast) : ISessionHubClient, IDisposable {
     #region Internal State
 
@@ -79,7 +77,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         await EnsureInitialized();
 
-        Task.Run(async () => await _server!.AddPointAsync(_sessionId!, point));
+        _server!.AddPointAsync(_sessionId!, point).Forget();
     }
 
     public async Task CreateAsync(string title, string name, IEnumerable<string> pointValues) {
@@ -178,19 +176,19 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task RemovePointAsync(string point) {
         await EnsureInitialized();
 
-        Task.Run(async () => await _server!.RemovePointAsync(_sessionId!, point));
+        _server!.RemovePointAsync(_sessionId!, point).Forget();
     }
 
     public async Task SendStarToParticipantAsync(string participantId) {
         await EnsureInitialized();
-        Task.Run(async () => await _server!.SendStarToParticipantAsync(_sessionId!, participantId));
+        _server!.SendStarToParticipantAsync(_sessionId!, participantId).Forget();
     }
 
     public async Task UpdateNameAsync(string name) {
         name = name.Trim();
 
         await EnsureInitialized();
-        Task.Run(async () => await _server!.UpdateParticipantNameAsync(_sessionId!, await EncryptAsync(name)));
+        _server!.UpdateParticipantNameAsync(_sessionId!, await EncryptAsync(name)).Forget();
 
         Session = Session! with {
             Participants = [
@@ -210,7 +208,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
 
         await EnsureInitialized();
-        Task.Run(async () => await _server!.UpdateParticipantPointsAsync(_sessionId!, points));
+        _server!.UpdateParticipantPointsAsync(_sessionId!, points).Forget();
 
         Session = Session! with {
             Participants = [
@@ -224,14 +222,14 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public async Task UpdateStateAsync(State state) {
         await EnsureInitialized();
-        Task.Run(async () => await _server!.UpdateSessionStateAsync(_sessionId!, state));
+        _server!.UpdateSessionStateAsync(_sessionId!, state).Forget();
     }
 
     public async Task UpdateTitleAsync(string title) {
         title = title.Trim();
 
         await EnsureInitialized();
-        Task.Run(async () => await _server!.UpdateSessionTitleAsync(_sessionId!, await EncryptAsync(title)));
+        _server!.UpdateSessionTitleAsync(_sessionId!, await EncryptAsync(title)).Forget();
 
         Session = Session! with {
             Title = title
@@ -381,4 +379,3 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         LeaveAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
 }
-#pragma warning restore CS4014

@@ -63,6 +63,18 @@ Note that while you technically can deploy this without Redis, I don't recommend
 
 In future I'll be adding some of these settings to a Railway config file in the repo, eliminating the need for a couple of these steps.
 
+## Via Docker
+
+_This section TBD_.
+
+This is a .NET 8 app, and as such you should be able to [publish it as a dockerfile](https://learn.microsoft.com/en-us/dotnet/core/docker/publish-as-container?pivots=dotnet-8-0) with `dotnet publish`. I have yet to get this working. This would be a good first issue if you want to contribute by [adding documentation for this](https://github.com/IanWold/PlanningPoker/issues/25)!
+
+## Via Azure
+
+_This section TBD_.
+
+If you're hoping to contribute, this would be a good first issue to [add documentation for this](https://github.com/IanWold/PlanningPoker/issues/26)! Realistically, if you have an Azure subscription you should be able to click the Publish button in Visual Studio and send it up in a new App Service.
+
 # Developing
 
 The client is a Blazor WASM SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.

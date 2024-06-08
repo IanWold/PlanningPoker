@@ -284,8 +284,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
                 Session!.Participants
                 .Select(p =>
                     p.ParticipantId == participantId
-                        ? p with { Points = points }
-                        : p
+                    ? p with { Points = points }
+                    : p
                 )
                 .ToList()
         };
@@ -340,8 +340,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
                 Session!.Participants
                 .Select(p =>
                     p.ParticipantId == participantId
-                        ? p with { Stars = p.Stars + 1 }
-                        : p
+                    ? p with { Stars = p.Stars + 1 }
+                    : p
                 )
                 .ToList()
         };

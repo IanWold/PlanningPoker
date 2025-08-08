@@ -77,50 +77,26 @@ public class RedisStore(IDatabase database) : IStore
 
     public async Task<Session?> GetSessionAsync(string sessionId) {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
+        
+        var getSessionTask = database.HashGetAllAsync(sessionId);
+        var getPointsTask = database.ListRangeAsync($"{sessionId}:points");
+        var getParticipantTasks = participantIds.Select(i => (id: i, task: database.HashGetAllAsync($"{sessionId}:participants:{i}")));
 
-        Session? session = null;
+        await Task.WhenAll([getSessionTask, getPointsTask, .. getParticipantTasks.Select(p => p.task)]);
 
-        var participants = new ConcurrentBag<Participant>();
-        var points = Enumerable.Empty<string>();
-
-        Task[] readTasks = [
-            database
-                .HashGetAllAsync(sessionId)
-                .ContinueWith(s => {
-                    if (s.Result.Length > 0) {
-                        session = new Session(
-                            Title: s.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
-                            Participants: [],
-                            State: Enum.Parse<State>((string)s.Result.Single(h => h.Name == nameof(Session.State)).Value!),
-                            Points: []
-                        );
-                    }
-                }),
-            database.ListRangeAsync($"{sessionId}:points")
-                .ContinueWith(p => points = p?.Result?.Select(v => (string)v!)?.ToArray() ?? []),
-            ..participantIds.Select(i =>
-                database
-                    .HashGetAllAsync($"{sessionId}:participants:{i}")
-                    .ContinueWith(p =>
-                        participants.Add(new(
-                            i!,
-                            p.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
-                            p.Result.Single(h => h.Name == nameof(Participant.Points)).Value!,
-                            (int)p.Result.Single(h => h.Name == nameof(Participant.Stars)).Value
-                        ))
-                    )
+        return getSessionTask.Result.Length > 0
+            ? new Session(
+                Title: getSessionTask.Result.Single(h => h.Name == nameof(Session.Title)).Value!,
+                Participants: getParticipantTasks.Select(p => new Participant(
+                    p.id!,
+                    p.task.Result.Single(h => h.Name == nameof(Participant.Name)).Value!,
+                    p.task.Result.Single(h => h.Name == nameof(Participant.Points)).Value!,
+                    (int)p.task.Result.Single(h => h.Name == nameof(Participant.Stars)).Value
+                )),
+                State: Enum.Parse<State>((string)getSessionTask.Result.Single(h => h.Name == nameof(Session.State)).Value!),
+                Points: getPointsTask.Result?.Select(v => (string)v!)?.ToArray() ?? []
             )
-        ];
-
-        await Task.WhenAll(readTasks);
-
-        return session switch {
-            Session s => s with {
-                Participants = [.. participants],
-                Points = points
-            },
-            var n => n
-        };
+            : null;
     }
 
     public async Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1) =>

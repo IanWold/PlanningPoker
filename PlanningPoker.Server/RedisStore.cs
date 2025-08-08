@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using StackExchange.Redis;
 
 namespace PlanningPoker.Server;
@@ -77,7 +76,7 @@ public class RedisStore(IDatabase database) : IStore
 
     public async Task<Session?> GetSessionAsync(string sessionId) {
         var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
-        
+
         var getSessionTask = database.HashGetAllAsync(sessionId);
         var getPointsTask = database.ListRangeAsync($"{sessionId}:points");
         var getParticipantTasks = participantIds.Select(i => (id: i, task: database.HashGetAllAsync($"{sessionId}:participants:{i}")));

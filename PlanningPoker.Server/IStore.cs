@@ -10,6 +10,7 @@ public interface IStore {
     Task IncrementParticipantStarsAsync(string sessionId, string participantId, int count = 1);
     Task RemovePointAsync(string sessionId, string point);
     Task UpdateAllParticipantPointsAsync(string sessionId, string points = "");
+    Task UpdateParticipantId(string sessionId, string oldParticipantId, string newParticipantId);
     Task UpdateParticipantNameAsync(string sessionId, string participantId, string name);
     Task UpdateParticipantPointsAsync(string sessionId, string participantId, string points);
     Task UpdateSessionStateAsync(string sessionId, State state);

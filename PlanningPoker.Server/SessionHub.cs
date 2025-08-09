@@ -1,8 +1,21 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using System.Collections.Concurrent;
+using Microsoft.AspNetCore.SignalR;
 
 namespace PlanningPoker.Server;
 
 public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
+    static readonly ConcurrentDictionary<string, string> _usersToSessionIds = new();
+
+    private async Task AddToGroupAsync(string participantId, string sessionId) {
+        await Groups.AddToGroupAsync(participantId, sessionId);
+        _usersToSessionIds[participantId] = sessionId;
+    }
+
+    private async Task RemoveFromGroupAsync(string participantId, string sessionId) {
+        await Groups.AddToGroupAsync(participantId, sessionId);
+        _usersToSessionIds.TryRemove(participantId, out _);
+    }
+
     public async Task AddPointAsync(string sessionId, string point) {
         store.AddPointAsync(sessionId, point).Forget();
 
@@ -10,11 +23,12 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
     }
 
     public async Task<Session> ConnectToSessionAsync(string sessionId) {
-        if (await store.GetSessionAsync(sessionId) is not Session session) {
+        if (await store.GetSessionAsync(sessionId) is not Session session)
+        {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
+        await AddToGroupAsync(Context.ConnectionId, sessionId);
 
         return session;
     }
@@ -24,7 +38,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
 
         var newGuid = await store.CreateSessionAsync(title, points);
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, newGuid.ToString());
+        await AddToGroupAsync(Context.ConnectionId, newGuid.ToString());
 
         return newGuid;
     }
@@ -32,24 +46,31 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
     public async Task<string> JoinSessionAsync(string sessionId, string name) {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
-        if (!await store.ExistsSessionAsync(sessionId)) {
+        if (!await store.ExistsSessionAsync(sessionId))
+        {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
         store.CreateParticipantAsync(sessionId, Context.ConnectionId, name).Forget();
 
-        await Clients.Group(sessionId.ToString()).OnParticipantAdded(Context.ConnectionId, name);
-        await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
+        await Clients.Group(sessionId).OnParticipantAdded(Context.ConnectionId, name);
+        await AddToGroupAsync(Context.ConnectionId, sessionId);
 
         return Context.ConnectionId;
     }
 
     public async Task DisconnectFromSessionAsync(string sessionId) {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.ToString());
+        await RemoveFromGroupAsync(Context.ConnectionId, sessionId);
 
         store.DeleteParticipantAsync(sessionId, Context.ConnectionId).Forget();
 
-        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
+        await Clients.OthersInGroup(sessionId).OnParticipantRemoved(Context.ConnectionId);
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception) {
+        if (_usersToSessionIds.TryGetValue(Context.ConnectionId, out var sessionId)) {
+            await DisconnectFromSessionAsync(sessionId);
+        }
     }
 
     public async Task RemovePointAsync(string sessionId, string point) {
@@ -61,13 +82,25 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
     public async Task SendStarToParticipantAsync(string sessionId, string participantId) {
         store.IncrementParticipantStarsAsync(sessionId, participantId).Forget();
 
-        await Clients.Group(sessionId.ToString()).OnStarSentToParticipant(participantId);
+        await Clients.Group(sessionId).OnStarSentToParticipant(participantId);
+    }
+
+    public async Task<Session> UpdateParticipantIdAsync(string sessionId, string oldParticipantId) {
+        await store.UpdateParticipantId(sessionId, oldParticipantId, Context.ConnectionId);
+        await AddToGroupAsync(Context.ConnectionId, sessionId);
+        await Clients.OthersInGroup(sessionId).OnParticipantIdUpdated(oldParticipantId, Context.ConnectionId);
+
+        if (await store.GetSessionAsync(sessionId) is not Session session) {
+            throw new InvalidOperationException($"Session {sessionId} does not exist.");
+        }
+
+        return session;
     }
 
     public async Task UpdateParticipantPointsAsync(string sessionId, string points) {
         store.UpdateParticipantPointsAsync(sessionId, Context.ConnectionId, points).Forget();
 
-        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(Context.ConnectionId, points);
+        await Clients.OthersInGroup(sessionId).OnParticipantPointsUpdated(Context.ConnectionId, points);
     }
 
     public async Task UpdateSessionStateAsync(string sessionId, State state) {
@@ -77,15 +110,15 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
             store.UpdateAllParticipantPointsAsync(sessionId).Forget();
         }
 
-        await Clients.Group(sessionId.ToString()).OnStateUpdated(state);
+        await Clients.Group(sessionId).OnStateUpdated(state);
     }
 
     public async Task UpdateSessionTitleAsync(string sessionId, string title) {
         ArgumentException.ThrowIfNullOrWhiteSpace(title, nameof(title));
 
         store.UpdateSessionTitleAsync(sessionId, title).Forget();
-        
-        await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
+
+        await Clients.OthersInGroup(sessionId).OnTitleUpdated(title);
     }
 
     public async Task UpdateParticipantNameAsync(string sessionId, string name) {
@@ -93,6 +126,6 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
 
         store.UpdateParticipantNameAsync(sessionId, Context.ConnectionId, name).Forget();
 
-        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantNameUpdated(Context.ConnectionId, name);
+        await Clients.OthersInGroup(sessionId).OnParticipantNameUpdated(Context.ConnectionId, name);
     }
 }

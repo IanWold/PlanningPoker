@@ -10,18 +10,18 @@ public class InMemoryStore : IStore {
     }
 
     private static Task UpdateParticipant(string sessionId, string participantId, Func<Participant, Participant> update) {
-        var participant = _sessions[sessionId].Participants.SingleOrDefault(p => p.ParticipantId == participantId);
-        return UpdateSession(sessionId, session => session with { Participants = [ ..session.Participants.Except([participant]), update(participant!) ] });
+        var participant = _sessions[sessionId].Participants.Single(p => p.ParticipantId == participantId);
+        return UpdateSession(sessionId, session => session with { Participants = [.. session.Participants.Except([participant]), update(participant!)] });
     }
 
     public Task CreateParticipantAsync(string sessionId, string participantId, string name) =>
         UpdateSession(sessionId, session => session with {
-            Participants = [..session.Participants, new(participantId, name, "", 0) ]
+            Participants = [.. session.Participants, new(participantId, name, "", 0)]
         });
 
     public Task AddPointAsync(string sessionId, string point) =>
         UpdateSession(sessionId, session => session with {
-            Points = [..session.Points, point]
+            Points = [.. session.Points, point]
         });
 
     public Task<string> CreateSessionAsync(string title, IEnumerable<string> points) {
@@ -60,7 +60,12 @@ public class InMemoryStore : IStore {
 
     public Task UpdateAllParticipantPointsAsync(string sessionId, string points = "") =>
         UpdateSession(sessionId, session => session with {
-            Participants = session.Participants.Select(p => p with { Points = points}).ToArray()
+            Participants = session.Participants.Select(p => p with { Points = points }).ToArray()
+        });
+
+    public Task UpdateParticipantId(string sessionId, string oldParticipantId, string newParticipantId) =>
+        UpdateParticipant(sessionId, oldParticipantId, participant => participant with {
+            ParticipantId = newParticipantId
         });
 
     public Task UpdateParticipantNameAsync(string sessionId, string participantId, string name) =>

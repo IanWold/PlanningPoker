@@ -109,6 +109,24 @@ public class RedisStore(IDatabase database) : IStore
         Parallel.ForEach(participantIds, i => database.HashSet($"{sessionId}:participants:{i}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget));
     }
 
+    public async Task UpdateParticipantId(string sessionId, string oldParticipantId, string newParticipantId) {
+        await database.ListRemoveAsync($"{sessionId}:participants", oldParticipantId, 0, CommandFlags.FireAndForget);
+        await database.ListRightPushAsync($"{sessionId}:participants", newParticipantId, flags: CommandFlags.FireAndForget);
+
+        var oldParticipant = await database.HashGetAllAsync($"{sessionId}:participants:{oldParticipantId}");
+
+        await database.KeyDeleteAsync($"{sessionId}:participants:{oldParticipantId}", CommandFlags.FireAndForget);
+        await database.HashSetAsync(
+            key: $"{sessionId}:participants:{newParticipantId}",
+            hashFields: [
+                new HashEntry(nameof(Participant.Name), oldParticipant.Single(e => e.Name == nameof(Participant.Name)).Value),
+                new HashEntry(nameof(Participant.Points), oldParticipant.Single(e => e.Name == nameof(Participant.Points)).Value),
+                new HashEntry(nameof(Participant.Stars), oldParticipant.Single(e => e.Name == nameof(Participant.Stars)).Value)
+            ],
+            flags: CommandFlags.FireAndForget
+        );
+    }
+
     public async Task UpdateParticipantNameAsync(string sessionId, string participantId, string name) =>
         await database.HashSetAsync($"{sessionId}:participants:{participantId}", [new HashEntry(nameof(Participant.Name), name)], flags: CommandFlags.FireAndForget);
 

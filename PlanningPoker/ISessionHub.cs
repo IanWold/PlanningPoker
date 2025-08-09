@@ -8,6 +8,7 @@ public interface ISessionHub {
     Task DisconnectFromSessionAsync(string sessionId);
     Task RemovePointAsync(string sessionId, string point);
     Task SendStarToParticipantAsync(string sessionId, string participantId);
+    Task<Session> UpdateParticipantIdAsync(string sessionId, string oldParticipantId);
     Task UpdateParticipantPointsAsync(string sessionId, string points);
     Task UpdateSessionStateAsync(string sessionId, State state);
     Task UpdateSessionTitleAsync(string sessionId, string title);

@@ -11,6 +11,11 @@
         <span class="visually-hidden">Loading...</span>
     </div>
 }
+else if (_state.IsClosed) {
+    <div style="position: absolute; left: 50%; top: 50%; margin-top:-3rem; margin-left: -3rem; width: 6rem; height: 6rem;" role="status">
+        ⚠️ You've been disconnected! Please refresh this page to reconnect.
+    </div>
+}
 else {
     <ToastComponent />
     <JoinFormComponent />

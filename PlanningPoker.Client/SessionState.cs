@@ -37,6 +37,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public bool ShowShareNotification { get; private set; }
 
+    public bool IsReconnecting { get; private set; }
+
+    public bool IsClosed { get; private set; }
+
     public string SessionUrl =>
         $"https://freeplanningpoker.io/session/{_sessionId}#key={_encryptionKey}";
 
@@ -60,10 +64,37 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _connection.ClientRegistration<ISessionHubClient>(this);
         _server = _connection.ServerProxy<ISessionHub>();
+
+        _connection.Reconnecting += OnReconnectingAsync;
+        _connection.Reconnected += OnReconnectedAsync;
+        _connection.Closed += OnClosedAsync;
         
         await jsRuntime.InvokeVoidAsync("setupSignalRBeforeUnloadListener", DotNetObjectReference.Create(this));
         
         await _connection.StartAsync();
+    }
+
+    private Task OnReconnectingAsync(Exception? exception) {
+        IsReconnecting = true;
+        NotifyUpdate();
+        return Task.CompletedTask;
+    }
+
+    private async Task OnReconnectedAsync(string? newParticipantId) {
+        IsReconnecting = false;
+
+        if (newParticipantId is not null) {
+            Session = await _server!.UpdateParticipantIdAsync(_sessionId!, _participantId!);
+            _participantId = newParticipantId;
+        }
+
+        NotifyUpdate();
+    }
+
+    private Task OnClosedAsync(Exception? exception) {
+        IsClosed = true;
+        NotifyUpdate();
+        return Task.CompletedTask;
     }
 
     private void NotifyUpdate() {
@@ -256,6 +287,23 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
+    public async Task OnParticipantIdUpdated(string oldParticipantId, string newParticipantId) {
+        await EnsureInitialized();
+
+        Session = Session! with {
+            Participants = [..
+                Session!.Participants
+                .Select(p =>
+                    p.ParticipantId == oldParticipantId
+                    ? p with { ParticipantId = newParticipantId }
+                    : p
+                )
+            ]
+        };
+
+        NotifyUpdate();
+    }
+
     public async Task OnParticipantNameUpdated(string participantId, string name) {
         await EnsureInitialized();
 
@@ -263,9 +311,13 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         var previousName = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
         
         Session = Session! with {
-            Participants = [
-                .. Session!.Participants.Where(p => p.ParticipantId != participantId),
-                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = name }
+            Participants = [..
+                Session!.Participants
+                .Select(p =>
+                    p.ParticipantId == participantId
+                    ? p with { Name = name }
+                    : p
+                )
             ]
         };
 
@@ -280,14 +332,14 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Participants =
+            Participants = [..
                 Session!.Participants
                 .Select(p =>
                     p.ParticipantId == participantId
                     ? p with { Points = points }
                     : p
                 )
-                .ToList()
+            ]
         };
 
         NotifyUpdate();
@@ -299,10 +351,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         var name = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
 
         Session = Session! with {
-            Participants =
+            Participants = [..
                 Session!.Participants
                 .Where(p => p.ParticipantId != participantId)
-                .ToList()
+            ]
         };
 
         if (participantId != _participantId) {
@@ -336,14 +388,14 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Participants =
+            Participants = [..
                 Session!.Participants
                 .Select(p =>
                     p.ParticipantId == participantId
                     ? p with { Stars = p.Stars + 1 }
                     : p
                 )
-                .ToList()
+            ]
         };
 
         NotifyUpdate();
@@ -357,7 +409,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             Participants = 
                 state == State.Revealed
                 ? Session!.Participants
-                : Session!.Participants.Select(p => p with { Points = "" }).ToList()
+                : [.. Session!.Participants.Select(p => p with { Points = "" })]
         };
 
         NotifyUpdate();

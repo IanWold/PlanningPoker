@@ -55,6 +55,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _connection = new HubConnectionBuilder()
             .WithUrl(navigationManager.ToAbsoluteUri("/sessions/hub"))
+            .WithStatefulReconnect()
             .AddMessagePackProtocol()
             .Build();
 

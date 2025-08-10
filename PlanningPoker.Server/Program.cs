@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.SignalR;
 using PlanningPoker.Server;
 using StackExchange.Redis;
 
@@ -16,7 +17,9 @@ if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } p
     );
 }
 
-var signalRBuilder = builder.Services.AddSignalR();
+var signalRBuilder = builder.Services.AddSignalR(options => {
+    options.AddFilter<HubLoggingFilter>();
+});
 
 if (builder.Configuration.GetConnectionString("Redis") is string redisConnectionString && !string.IsNullOrEmpty(redisConnectionString)) {
     builder.Services.AddSingleton<IConnectionMultiplexer>(await ConnectionMultiplexer.ConnectAsync(redisConnectionString));

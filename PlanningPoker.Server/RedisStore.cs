@@ -21,7 +21,7 @@ public class RedisStore(IDatabase database) : IStore
         await database.ListRightPushAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
 
         await database.KeyExpireAsync($"{sessionId}:participants:{participantId}", DateTime.UtcNow.AddDays(1), flags: CommandFlags.FireAndForget);
-        await database.KeyExpireAsync($"{sessionId}:participants:", DateTime.UtcNow.AddDays(1), when: ExpireWhen.HasNoExpiry, flags: CommandFlags.FireAndForget);
+        await database.KeyExpireAsync($"{sessionId}:participants", DateTime.UtcNow.AddDays(1), when: ExpireWhen.HasNoExpiry, flags: CommandFlags.FireAndForget);
     }
 
     public async Task<string> CreateSessionAsync(string title, IEnumerable<string> points) {

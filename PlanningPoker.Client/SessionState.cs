@@ -281,14 +281,14 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Participants =
+            Participants = [..
                 Session!.Participants
                 .Select(p =>
                     p.ParticipantId == participantId
                     ? p with { Points = points }
                     : p
                 )
-                .ToList()
+            ]
         };
 
         NotifyUpdate();
@@ -300,10 +300,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         var name = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
 
         Session = Session! with {
-            Participants =
+            Participants = [..
                 Session!.Participants
                 .Where(p => p.ParticipantId != participantId)
-                .ToList()
+            ]
         };
 
         if (participantId != _participantId) {
@@ -317,7 +317,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Points = [..Session!.Points, point]
+            Points = [.. Session!.Points, point]
         };
 
         NotifyUpdate();
@@ -327,7 +327,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Points = Session!.Points.Except([point]).ToArray()
+            Points = [.. Session!.Points.Except([point])]
         };
 
         NotifyUpdate();
@@ -337,14 +337,14 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await EnsureInitialized();
 
         Session = Session! with {
-            Participants =
+            Participants = [..
                 Session!.Participants
                 .Select(p =>
                     p.ParticipantId == participantId
                     ? p with { Stars = p.Stars + 1 }
                     : p
                 )
-                .ToList()
+            ]
         };
 
         NotifyUpdate();
@@ -358,7 +358,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             Participants = 
                 state == State.Revealed
                 ? Session!.Participants
-                : Session!.Participants.Select(p => p with { Points = "" }).ToList()
+                : [.. Session!.Participants.Select(p => p with { Points = "" })]
         };
 
         NotifyUpdate();
@@ -378,5 +378,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     void IDisposable.Dispose() {
         LeaveAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        GC.SuppressFinalize(this);
     }
 }

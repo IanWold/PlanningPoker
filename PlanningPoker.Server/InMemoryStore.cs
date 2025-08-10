@@ -11,7 +11,7 @@ public class InMemoryStore : IStore {
 
     private static Task UpdateParticipant(string sessionId, string participantId, Func<Participant, Participant> update) {
         var participant = _sessions[sessionId].Participants.SingleOrDefault(p => p.ParticipantId == participantId);
-        return UpdateSession(sessionId, session => session with { Participants = [ ..session.Participants.Except([participant]), update(participant!) ] });
+        return UpdateSession(sessionId, session => session with { Participants = [ ..session.Participants.Except([participant!]), update(participant!) ] });
     }
 
     public Task CreateParticipantAsync(string sessionId, string participantId, string name) =>

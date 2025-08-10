@@ -5,10 +5,11 @@ namespace PlanningPoker.Server;
 
 public class HubLoggingFilter(ILogger<HubLoggingFilter> logger) : IHubFilter {
     public async ValueTask<object?> InvokeMethodAsync(HubInvocationContext invocationContext, Func<HubInvocationContext, ValueTask<object?>> next) {
-        logger.LogInformation("Client {ConnectionId} called {MethodName} with args: {Args}",
+        logger.LogInformation("Client {ConnectionId} called {MethodName} with args: {@Args}",
             invocationContext.Context.ConnectionId,
             invocationContext.HubMethodName,
-            string.Join(", ", invocationContext.HubMethodArguments.Select(o => JsonSerializer.Serialize(o)))
+            invocationContext.HubMethodArguments
+            // string.Join(", ", invocationContext.HubMethodArguments.Select(o => JsonSerializer.Serialize(o)))
         );
 
         return await next(invocationContext);

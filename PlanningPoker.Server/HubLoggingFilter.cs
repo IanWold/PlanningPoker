@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 
 namespace PlanningPoker.Server;
@@ -7,7 +8,7 @@ public class HubLoggingFilter(ILogger<HubLoggingFilter> logger) : IHubFilter {
         logger.LogInformation("Client {ConnectionId} called {MethodName} with args: {Args}",
             invocationContext.Context.ConnectionId,
             invocationContext.HubMethodName,
-            invocationContext.HubMethodArguments
+            string.Join(", ", invocationContext.HubMethodArguments.Select(o => JsonSerializer.Serialize(o)))
         );
 
         return await next(invocationContext);

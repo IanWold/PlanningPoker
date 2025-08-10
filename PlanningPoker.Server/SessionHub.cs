@@ -23,8 +23,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
     }
 
     public async Task<Session> ConnectToSessionAsync(string sessionId) {
-        if (await store.GetSessionAsync(sessionId) is not Session session)
-        {
+        if (await store.GetSessionAsync(sessionId) is not Session session) {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
@@ -46,8 +45,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
     public async Task<string> JoinSessionAsync(string sessionId, string name) {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
-        if (!await store.ExistsSessionAsync(sessionId))
-        {
+        if (!await store.ExistsSessionAsync(sessionId)) {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 

@@ -13,11 +13,13 @@ public class HubLoggingFilter(ILogger<HubLoggingFilter> logger) : IHubFilter {
 
         var result = await next(invocationContext);
 
-        _ = Task.Run(() => logger.LogInformation("Call to {MethodName} from client {ConnectionId} responding with: {Result}",
-            invocationContext.Context.ConnectionId,
-            invocationContext.HubMethodName,
-            JsonSerializer.Serialize(result)
-        ));
+        if (result is not null) {
+            _ = Task.Run(() => logger.LogInformation("Call to {MethodName} from client {ConnectionId} responding with: {Result}",
+                invocationContext.Context.ConnectionId,
+                invocationContext.HubMethodName,
+                JsonSerializer.Serialize(result)
+            ));
+        }
 
         return result;
     }

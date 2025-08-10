@@ -21,7 +21,7 @@ public class RedisStore(IDatabase database) : IStore
         await database.ListRightPushAsync($"{sessionId}:participants", participantId, flags: CommandFlags.FireAndForget);
 
         await database.KeyExpireAsync($"{sessionId}:participants:{participantId}", DateTime.UtcNow.AddDays(1), flags: CommandFlags.FireAndForget);
-        await database.KeyExpireAsync($"{sessionId}:participants:", DateTime.UtcNow.AddDays(1), when: ExpireWhen.HasNoExpiry, flags: CommandFlags.FireAndForget);
+        await database.KeyExpireAsync($"{sessionId}:participants", DateTime.UtcNow.AddDays(1), when: ExpireWhen.HasNoExpiry, flags: CommandFlags.FireAndForget);
     }
 
     public async Task<string> CreateSessionAsync(string title, IEnumerable<string> points) {
@@ -125,6 +125,9 @@ public class RedisStore(IDatabase database) : IStore
             ],
             flags: CommandFlags.FireAndForget
         );
+
+        await database.KeyExpireAsync($"{sessionId}:participants:{newParticipantId}", DateTime.UtcNow.AddDays(1), flags: CommandFlags.FireAndForget);
+        await database.KeyExpireAsync($"{sessionId}:participants", DateTime.UtcNow.AddDays(1), when: ExpireWhen.HasNoExpiry, flags: CommandFlags.FireAndForget);
     }
 
     public async Task UpdateParticipantNameAsync(string sessionId, string participantId, string name) =>

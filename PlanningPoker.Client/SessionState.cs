@@ -361,7 +361,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
                 : [.. Session!.Participants.Select(p => p with { Points = "" })]
         };
 
-        if (Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId) is string updatingParticipant) {
+        if (Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId)?.Name is string updatingParticipant) {
             toast.Add($"{updatingParticipant} has {Enum.GetName(typeof(State), state).ToLower()} the cards");
         }
 

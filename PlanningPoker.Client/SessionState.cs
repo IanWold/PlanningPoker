@@ -73,6 +73,13 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
     }
 
+    private void NotifyParticipantAction(string participantId, Func<string, string> message) =>
+        toast.Add(message(
+            participantId == _participantId
+            ? "You"
+            : Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId)?.Name ?? "Unknown Participant"
+        ));
+
     public async Task AddPointAsync(string point) {
         point = point.Trim();
 
@@ -313,23 +320,25 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnPointAdded(string point) {
+    public async Task OnPointAdded(string point, string actingParticipantId) {
         await EnsureInitialized();
 
         Session = Session! with {
             Points = [.. Session!.Points, point]
         };
 
+        NotifyParticipantAction(actingParticipantId, name => $"{name} added point option \"{point}\"");
         NotifyUpdate();
     }
 
-    public async Task OnPointRemoved(string point) {
+    public async Task OnPointRemoved(string point, string actingParticipantId) {
         await EnsureInitialized();
 
         Session = Session! with {
             Points = [.. Session!.Points.Except([point])]
         };
 
+        NotifyParticipantAction(actingParticipantId, name => $"{name} removed point option \"{point}\"");
         NotifyUpdate();
     }
 
@@ -350,7 +359,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnStateUpdated(State state, string participantId) {
+    public async Task OnStateUpdated(State state, string actingParticipantId) {
         await EnsureInitialized();
 
         Session = Session! with {
@@ -361,20 +370,18 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
                 : [.. Session!.Participants.Select(p => p with { Points = "" })]
         };
 
-        if (Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId)?.Name is string updatingParticipant) {
-            toast.Add($"{updatingParticipant} has {Enum.GetName(typeof(State), state)!.ToLower()} the cards");
-        }
-
+        NotifyParticipantAction(actingParticipantId, name => $"{name} has {Enum.GetName(state)!.ToLower()} the cards");
         NotifyUpdate();
     }
 
-    public async Task OnTitleUpdated(string title) {
+    public async Task OnTitleUpdated(string title, string actingParticipantId) {
         await EnsureInitialized();
 
         Session = Session! with {
             Title = await DecryptAsync(title)
         };
 
+        NotifyParticipantAction(actingParticipantId, name => $"{name} updated the title to \"{title}\"");
         NotifyUpdate();
     }
 

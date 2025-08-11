@@ -12,14 +12,14 @@
             @if (_state.History.Any()) {
                 @foreach (var notification in _state.History.OrderBy(n => n.Time)) {
                     <div class="dropdown-divider"></div>
-                    <div class="px-3 py-1" style="text-align: justify;">
+                    <div class="px-3 py-1">
                         <p class="m-0"><span class="text-secondary pe-2">@(notification.Time.ToString("h:mm"))</span> @notification.Message</p>
                     </div>
                 }
             }
             else {
                 <div class="dropdown-divider"></div>
-                <div class="px-3 py-1" style="text-align: justify;">
+                <div class="px-3 py-1">
                     <p class="m-0 text-secondary text-center">No notifications!</p>
                 </div>
             }

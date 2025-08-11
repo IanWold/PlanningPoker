@@ -6,7 +6,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
     public async Task AddPointAsync(string sessionId, string point) {
         store.AddPointAsync(sessionId, point).Forget();
 
-        await Clients.Groups(sessionId).OnPointAdded(point);
+        await Clients.Groups(sessionId).OnPointAdded(point, Context.ConnectionId);
     }
 
     public async Task<Session> ConnectToSessionAsync(string sessionId) {
@@ -55,7 +55,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
     public async Task RemovePointAsync(string sessionId, string point) {
         store.RemovePointAsync(sessionId, point).Forget();
 
-        await Clients.Groups(sessionId).OnPointRemoved(point);
+        await Clients.Groups(sessionId).OnPointRemoved(point, Context.ConnectionId);
     }
 
     public async Task SendStarToParticipantAsync(string sessionId, string participantId) {
@@ -85,7 +85,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
 
         store.UpdateSessionTitleAsync(sessionId, title).Forget();
         
-        await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title);
+        await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title, Context.ConnectionId);
     }
 
     public async Task UpdateParticipantNameAsync(string sessionId, string name) {

@@ -8,6 +8,6 @@ public interface ISessionHubClient {
     Task OnPointAdded(string point);
     Task OnPointRemoved(string point);
     Task OnStarSentToParticipant(string participantId);
-    Task OnStateUpdated(State state);
+    Task OnStateUpdated(State state, string participantId);
     Task OnTitleUpdated(string title);
 }

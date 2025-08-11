@@ -350,7 +350,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnStateUpdated(State state) {
+    public async Task OnStateUpdated(State state, string participantId) {
         await EnsureInitialized();
 
         Session = Session! with {
@@ -360,6 +360,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
                 ? Session!.Participants
                 : [.. Session!.Participants.Select(p => p with { Points = "" })]
         };
+
+        if (Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId)?.Name is string updatingParticipant) {
+            toast.Add($"{updatingParticipant} has {Enum.GetName(typeof(State), state)!.ToLower()} the cards");
+        }
 
         NotifyUpdate();
     }

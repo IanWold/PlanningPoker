@@ -362,7 +362,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         };
 
         if (Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId)?.Name is string updatingParticipant) {
-            toast.Add($"{updatingParticipant} has {Enum.GetName(typeof(State), state).ToLower()} the cards");
+            toast.Add($"{updatingParticipant} has {Enum.GetName(typeof(State), state)!.ToLower()} the cards");
         }
 
         NotifyUpdate();

@@ -77,7 +77,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
             store.UpdateAllParticipantPointsAsync(sessionId).Forget();
         }
 
-        await Clients.Group(sessionId.ToString()).OnStateUpdated(state);
+        await Clients.Group(sessionId.ToString()).OnStateUpdated(state, Context.ConnectionId);
     }
 
     public async Task UpdateSessionTitleAsync(string sessionId, string title) {

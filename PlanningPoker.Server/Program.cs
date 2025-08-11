@@ -24,7 +24,9 @@ if (builder.Configuration.GetConnectionString("Redis") is string redisConnection
     builder.Services.AddTransient<IStore, RedisStore>();
     signalRBuilder.AddStackExchangeRedis(
         redisConnectionString,
-        options => options.Configuration.ChannelPrefix = RedisChannel.Literal("signalr_prod")
+        options => {
+            options.Configuration.ChannelPrefix = RedisChannel.Literal("signalr_prod");
+        }
     );
 }
 else {

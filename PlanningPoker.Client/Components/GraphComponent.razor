@@ -25,7 +25,6 @@
             _state.Session.Participants.Where(p => p.Points == point).Count()
         );
 
-    protected override void OnInitialized() {
+    protected override void OnInitialized() =>
         _state.OnStateChanged += (o, e) => StateHasChanged();
-    }
 }

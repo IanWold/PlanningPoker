@@ -24,9 +24,8 @@
 
     bool IsLoading { get; set; }
     
-    protected override void OnInitialized() {
+    protected override void OnInitialized() =>
         _state.OnStateChanged += (o, e) => StateHasChanged();
-    }
 
     async Task OnJoinClicked() {
         if (!string.IsNullOrWhiteSpace(Name)) {

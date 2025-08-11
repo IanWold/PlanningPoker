@@ -44,7 +44,6 @@
 }
 
 @code {
-    protected override void OnInitialized() {
+    protected override void OnInitialized() =>
         _state.OnStateChanged += (o, e) => StateHasChanged();
-    }
 }

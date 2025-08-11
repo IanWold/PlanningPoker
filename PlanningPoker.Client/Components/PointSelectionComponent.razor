@@ -50,9 +50,8 @@ else {
 
     string PointToAdd { get; set; } = string.Empty;
 
-    protected override void OnInitialized() {
+    protected override void OnInitialized() =>
         _state.OnStateChanged += (o, e) => StateHasChanged();
-    }
 
     void OnEditClicked() {
         PointToAdd = "";

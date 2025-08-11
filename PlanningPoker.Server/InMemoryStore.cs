@@ -11,17 +11,17 @@ public class InMemoryStore : IStore {
 
     private static Task UpdateParticipant(string sessionId, string participantId, Func<Participant, Participant> update) {
         var participant = _sessions[sessionId].Participants.SingleOrDefault(p => p.ParticipantId == participantId);
-        return UpdateSession(sessionId, session => session with { Participants = [ ..session.Participants.Except([participant!]), update(participant!) ] });
+        return UpdateSession(sessionId, session => session with { Participants = [.. session.Participants.Except([participant!]), update(participant!)] });
     }
 
     public Task CreateParticipantAsync(string sessionId, string participantId, string name) =>
         UpdateSession(sessionId, session => session with {
-            Participants = [..session.Participants, new(participantId, name, "", 0) ]
+            Participants = [.. session.Participants, new(participantId, name, "", 0) ]
         });
 
     public Task AddPointAsync(string sessionId, string point) =>
         UpdateSession(sessionId, session => session with {
-            Points = [..session.Points, point]
+            Points = [.. session.Points, point]
         });
 
     public Task<string> CreateSessionAsync(string title, IEnumerable<string> points) {
@@ -55,7 +55,7 @@ public class InMemoryStore : IStore {
 
     public Task RemovePointAsync(string sessionId, string point) =>
         UpdateSession(sessionId, session => session with {
-            Points = session.Points.Except([point]).ToArray()
+            Points = [.. session.Points.Except([point])]
         });
 
     public Task UpdateAllParticipantPointsAsync(string sessionId, string points = "") =>

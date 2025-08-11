@@ -34,6 +34,10 @@ The application will see your connection string and use the Redis store instead 
 
 In future I want to look into Docker environments to be able to remove standing up your own Redis as being a burden.
 
+## Running with Docker
+
+FreePlanningPoker comes with a standalone [Dockerfile](https://github.com/IanWold/PlanningPoker/blob/main/Dockerfile) that you can run in Docker.
+
 # Deploying
 
 You can deploy this project yourself without much fuss. I recommend using [Railway](https://railway.app/), my favorite cloud provider for simple apps (heck, even some complicated scenarios are probably fine here).
@@ -58,9 +62,7 @@ In future I'll be adding some of these settings to a Railway config file in the 
 
 ## Via Docker
 
-_This section TBD_.
-
-This is a .NET 8 app, and as such you should be able to [publish it as a dockerfile](https://learn.microsoft.com/en-us/dotnet/core/docker/publish-as-container?pivots=dotnet-8-0) with `dotnet publish`. I have yet to get this working. This would be a good first issue if you want to contribute by [adding documentation for this](https://github.com/IanWold/PlanningPoker/issues/25)!
+FreePlanningPoker comes with a standalone [Dockerfile](https://github.com/IanWold/PlanningPoker/blob/main/Dockerfile) that you can use to deploy to any containerized environment.
 
 ## Via Azure
 

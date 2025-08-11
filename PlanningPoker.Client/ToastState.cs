@@ -10,6 +10,8 @@ public class ToastState {
 
         public string Message { get; init; }
 
+        public DateTime Time { get; } = DateTime.Now;
+
         public Toast(string message, Action<Toast> onExpired) {
             Message = message;
 
@@ -20,10 +22,16 @@ public class ToastState {
 
     public IEnumerable<Toast> Toasts { get; private set; } = [];
 
+    public IEnumerable<Toast> History { get; private set; } = [];
+
     public event EventHandler? OnStateChanged;
 
     public void Add(string message) {
-        Toasts = [..Toasts, new(message, Dismiss)];
+        var toast = new Toast(message, Dismiss);
+
+        Toasts = [.. Toasts, toast];
+        History = [.. History, toast];
+
         OnStateChanged?.Invoke(this, EventArgs.Empty);
     }
 

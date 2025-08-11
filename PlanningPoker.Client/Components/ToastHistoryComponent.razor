@@ -1,0 +1,35 @@
+@inject ToastState _state
+
+<div>
+    <button type="button" class="m-2 btn btn-square btn-outline-secondary border-0 dropdown-toggle caret-off" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+        <ion-icon name="notifications-sharp"></ion-icon>
+    </button>
+    <div class="dropdown-menu dropdown-menu-end mb-3 shadow border-0" style="width: 500px;">
+        <div class="d-flex justify-content-between px-3 align-items-center">
+            <p class="m-0 py-2 fw-bold">Notification History</p>
+        </div>
+        <div style=" max-height: 75vh; overflow-y: auto;">
+            @if (_state.History.Any()) {
+                @foreach (var notification in _state.History.OrderBy(n => n.Time)) {
+                    <div class="dropdown-divider"></div>
+                    <div class="px-3 py-1" style="text-align: justify;">
+                        <p class="m-0"><span class="text-secondary pe-2">@(notification.Time.ToString("h:mm"))</span> @notification.Message</p>
+                    </div>
+                }
+            }
+            else {
+                <div class="dropdown-divider"></div>
+                <div class="px-3 py-1" style="text-align: justify;">
+                    <p class="m-0 text-secondary text-center">No notifications!</p>
+                </div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized() {
+        _state.OnStateChanged += (o, e) => StateHasChanged();
+    }
+}

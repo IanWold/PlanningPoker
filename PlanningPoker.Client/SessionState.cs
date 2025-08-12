@@ -370,7 +370,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
                 : [.. Session!.Participants.Select(p => p with { Points = "" })]
         };
 
-        NotifyParticipantAction(actingParticipantId, name => $"{name} has {Enum.GetName(state)!.ToLower()} the cards");
+        NotifyParticipantAction(actingParticipantId, name => $"{name} {(name == "You" ? "have" : "has")} {Enum.GetName(state)!.ToLower()} the cards");
         NotifyUpdate();
     }
 

@@ -10,7 +10,7 @@
             <div class="card-body p-2">
                 <div class="d-flex gap-2 justify-content-between">
                     @foreach (var point in _state.Session.Points) {
-                        <button class="btn btn-square btn-outline-danger btn-hover-icon" @onclick="@(async () => await OnRemoveClicked(point))">
+                        <button class="btn btn-square btn-outline-danger btn-hover-icon" @onclick="@(() => OnRemoveClicked(point))">
                             <label>@point</label>
                             <ion-icon name="trash-sharp" role="img" class="md hydrated"></ion-icon>
                         </button>
@@ -33,7 +33,7 @@ else {
             <div class="card-body p-2">
                 <div class="d-flex gap-2 justify-content-between">
                     @foreach (var point in _state.Session.Points) {
-                        <button class="btn btn-square @(_state.Self?.Points == point ? "btn-primary" : "btn-outline-primary")" @onclick="@(async () => await _state.UpdatePointsAsync(point))">@point</button>
+                        <button class="btn btn-square @(_state.Self?.Points == point ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => _state.UpdatePoints(point))">@point</button>
                     }
                 </div>
             </div>
@@ -62,13 +62,13 @@ else {
         IsEditing = false;
     }
 
-    async Task OnAddClicked() {
+    void OnAddClicked() {
         if (!string.IsNullOrWhiteSpace(PointToAdd)) {
             IsLoading = true;
             StateHasChanged();
 
             try {
-                await _state.AddPointAsync(PointToAdd);
+                _state.AddPoint(PointToAdd);
             }
             catch { }
             
@@ -78,12 +78,12 @@ else {
         }
     }
 
-    async Task OnRemoveClicked(string point) {
+    void OnRemoveClicked(string point) {
         IsLoading = true;
         StateHasChanged();
 
         try {
-            await _state.RemovePointAsync(point);
+            _state.RemovePoint(point);
         }
         catch { }
         

@@ -39,7 +39,6 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
         store.CreateParticipantAsync(sessionId, Context.ConnectionId, name).Forget();
 
         await Clients.Group(sessionId.ToString()).OnParticipantAdded(Context.ConnectionId, name);
-        await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
 
         return Context.ConnectionId;
     }

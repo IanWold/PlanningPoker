@@ -2,10 +2,10 @@
 
 <div class="circle bg-secondary-subtle" style="--total: @(_state!.Session!.Participants.Count()); --radius: @(System.Math.Max(_state.Session.Participants.Count() * 25, 125))px;">
     @if (_state.Session.State == State.Hidden) {
-        <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
+        <button class="btn btn-outline-primary border-0" @onclick="@(() => _state.UpdateState(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
     }
     else {
-        <button class="btn btn-outline-primary border-0" @onclick="@(async () => await _state.UpdateStateAsync(State.Hidden))"><ion-icon name="sync"></ion-icon></button>
+        <button class="btn btn-outline-primary border-0" @onclick="@(() => _state.UpdateState(State.Hidden))"><ion-icon name="sync"></ion-icon></button>
     }
 
     @for (int i = 0; i < _state.Others.Count(); i++) {
@@ -26,7 +26,7 @@
             </div>
 
             <div class="btn-option btn-like">
-                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(async () => await _state.SendStarToParticipantAsync(participantId))"><ion-icon name="star-sharp"></ion-icon></button>
+                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => _state.SendStarToParticipant(participantId))"><ion-icon name="star-sharp"></ion-icon></button>
             </div>
         </div>
     }

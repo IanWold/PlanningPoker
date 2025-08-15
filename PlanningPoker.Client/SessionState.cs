@@ -80,13 +80,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             : Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId)?.Name ?? "Unknown Participant"
         ));
 
-    public async Task AddPointAsync(string point) {
-        point = point.Trim();
-
-        await EnsureInitialized();
-
-        _server!.AddPointAsync(_sessionId!, point).Forget();
-    }
+    public void AddPoint(string point) =>
+        _server!.AddPointAsync(_sessionId!, point.Trim()).Forget();
 
     public async Task CreateAsync(string title, string name, IEnumerable<string> pointValues) {
         title = title.Trim();
@@ -119,10 +114,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task JoinAsync(string name) {
         name = name.Trim();
 
-        await EnsureInitialized();
-        var participantId = await _server!.JoinSessionAsync(_sessionId!, await EncryptAsync(name));
-
-        _participantId = participantId;
+        _participantId = await _server!.JoinSessionAsync(_sessionId!, await EncryptAsync(name));
 
         NotifyUpdate();
     }
@@ -133,7 +125,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             return;
         }
 
-        await EnsureInitialized();
         await _server!.DisconnectFromSessionAsync(_sessionId!);
         await _connection!.StopAsync();
         await _connection!.DisposeAsync();
@@ -181,21 +172,15 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task RemovePointAsync(string point) {
-        await EnsureInitialized();
-
+    public void RemovePoint(string point) =>
         _server!.RemovePointAsync(_sessionId!, point).Forget();
-    }
 
-    public async Task SendStarToParticipantAsync(string participantId) {
-        await EnsureInitialized();
+    public void SendStarToParticipant(string participantId) =>
         _server!.SendStarToParticipantAsync(_sessionId!, participantId).Forget();
-    }
 
     public async Task UpdateNameAsync(string name) {
         name = name.Trim();
 
-        await EnsureInitialized();
         _server!.UpdateParticipantNameAsync(_sessionId!, await EncryptAsync(name)).Forget();
 
         Session = Session! with {
@@ -208,14 +193,13 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task UpdatePointsAsync(string points) {
+    public void UpdatePoints(string points) {
         points = points.Trim();
 
         if (points == Self?.Points) {
             points = "";
         }
 
-        await EnsureInitialized();
         _server!.UpdateParticipantPointsAsync(_sessionId!, points).Forget();
 
         Session = Session! with {
@@ -228,15 +212,12 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task UpdateStateAsync(State state) {
-        await EnsureInitialized();
+    public void UpdateState(State state) =>
         _server!.UpdateSessionStateAsync(_sessionId!, state).Forget();
-    }
 
     public async Task UpdateTitleAsync(string title) {
         title = title.Trim();
 
-        await EnsureInitialized();
         _server!.UpdateSessionTitleAsync(_sessionId!, await EncryptAsync(title)).Forget();
 
         Session = Session! with {
@@ -249,8 +230,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     #region ISessionHubClient Implementation
 
     public async Task OnParticipantAdded(string participantId, string name) {
-        await EnsureInitialized();
-
         name = await DecryptAsync(name);
 
         Session = Session! with {
@@ -265,8 +244,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     }
 
     public async Task OnParticipantNameUpdated(string participantId, string name) {
-        await EnsureInitialized();
-
         name = await DecryptAsync(name);
         var previousName = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
         
@@ -284,9 +261,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    public async Task OnParticipantPointsUpdated(string participantId, string points) {
-        await EnsureInitialized();
-
+    public Task OnParticipantPointsUpdated(string participantId, string points) {
         Session = Session! with {
             Participants = [..
                 Session!.Participants
@@ -299,11 +274,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         };
 
         NotifyUpdate();
+        return Task.CompletedTask;
     }
 
-    public async Task OnParticipantRemoved(string participantId) {
-        await EnsureInitialized();
-
+    public Task OnParticipantRemoved(string participantId) {
         var name = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
 
         Session = Session! with {
@@ -318,33 +292,30 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
 
         NotifyUpdate();
+        return Task.CompletedTask;
     }
 
-    public async Task OnPointAdded(string point, string actingParticipantId) {
-        await EnsureInitialized();
-
+    public Task OnPointAdded(string point, string actingParticipantId) {
         Session = Session! with {
             Points = [.. Session!.Points, point]
         };
 
         NotifyParticipantAction(actingParticipantId, name => $"{name} added point option \"{point}\"");
         NotifyUpdate();
+        return Task.CompletedTask;
     }
 
-    public async Task OnPointRemoved(string point, string actingParticipantId) {
-        await EnsureInitialized();
-
+    public Task OnPointRemoved(string point, string actingParticipantId) {
         Session = Session! with {
             Points = [.. Session!.Points.Except([point])]
         };
 
         NotifyParticipantAction(actingParticipantId, name => $"{name} removed point option \"{point}\"");
         NotifyUpdate();
+        return Task.CompletedTask;
     }
 
-    public async Task OnStarSentToParticipant(string participantId) {
-        await EnsureInitialized();
-
+    public Task OnStarSentToParticipant(string participantId) {
         Session = Session! with {
             Participants = [..
                 Session!.Participants
@@ -357,11 +328,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         };
 
         NotifyUpdate();
+        return Task.CompletedTask;
     }
 
-    public async Task OnStateUpdated(State state, string actingParticipantId) {
-        await EnsureInitialized();
-
+    public Task OnStateUpdated(State state, string actingParticipantId) {
         Session = Session! with {
             State = state,
             Participants = 
@@ -372,16 +342,15 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         NotifyParticipantAction(actingParticipantId, name => $"{name} has {Enum.GetName(state)!.ToLower()} the cards");
         NotifyUpdate();
+        return Task.CompletedTask;
     }
 
     public async Task OnTitleUpdated(string title, string actingParticipantId) {
-        await EnsureInitialized();
-
         Session = Session! with {
             Title = await DecryptAsync(title)
         };
 
-        NotifyParticipantAction(actingParticipantId, name => $"{name} updated the title to \"{title}\"");
+        NotifyParticipantAction(actingParticipantId, name => $"{name} updated the title to \"{Session.Title}\"");
         NotifyUpdate();
     }
 

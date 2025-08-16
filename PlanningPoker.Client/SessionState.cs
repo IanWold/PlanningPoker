@@ -248,9 +248,13 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         var previousName = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
         
         Session = Session! with {
-            Participants = [
-                .. Session!.Participants.Where(p => p.ParticipantId != participantId),
-                Session!.Participants.Single(p => p.ParticipantId == participantId) with { Name = name }
+            Participants = [..
+                Session!.Participants
+                .Select(p =>
+                    p.ParticipantId == participantId
+                    ? p with { Name = name }
+                    : p
+                )
             ]
         };
 

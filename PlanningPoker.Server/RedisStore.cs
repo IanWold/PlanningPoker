@@ -104,10 +104,10 @@ public class RedisStore(IDatabase database) : IStore
     public async Task RemovePointAsync(string sessionId, string point) =>
         await database.ListRemoveAsync($"{sessionId}:points", point, flags: CommandFlags.FireAndForget);
 
-    public async Task UpdateAllParticipantPointsAsync(string sessionId, string points = "") {
-        var participantIds = await database.ListRangeAsync($"{sessionId}:participants");
-        Parallel.ForEach(participantIds, i => database.HashSet($"{sessionId}:participants:{i}", [ new HashEntry(nameof(Participant.Points), points) ], flags: CommandFlags.FireAndForget));
-    }
+    public async Task UpdateAllParticipantPointsAsync(string sessionId, string points = "") =>
+        Parallel.ForEach(await database.ListRangeAsync($"{sessionId}:participants"),
+            i => database.HashSet($"{sessionId}:participants:{i}", [new HashEntry(nameof(Participant.Points), points)], flags: CommandFlags.FireAndForget)
+        );
 
     public async Task UpdateParticipantNameAsync(string sessionId, string participantId, string name) =>
         await database.HashSetAsync($"{sessionId}:participants:{participantId}", [new HashEntry(nameof(Participant.Name), name)], flags: CommandFlags.FireAndForget);

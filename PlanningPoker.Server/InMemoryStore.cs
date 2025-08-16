@@ -60,7 +60,7 @@ public class InMemoryStore : IStore {
 
     public Task UpdateAllParticipantPointsAsync(string sessionId, string points = "") =>
         UpdateSession(sessionId, session => session with {
-            Participants = session.Participants.Select(p => p with { Points = points}).ToArray()
+            Participants = [.. session.Participants.Select(p => p with { Points = points})]
         });
 
     public Task UpdateParticipantNameAsync(string sessionId, string participantId, string name) =>

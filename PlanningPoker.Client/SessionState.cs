@@ -8,15 +8,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     #region Internal State
 
     private HubConnection? _connection;
-
     private ISessionHub? _server;
-
     private string? _sessionId;
-
     private string? _participantId;
-
     private bool _isUpdateBelayed = false;
-
     private string _encryptionKey = string.Empty;
 
     #endregion
@@ -105,7 +100,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         await JoinAsync(name);
 
         _isUpdateBelayed = false;
-
         NotifyUpdate();
 
         navigationManager.NavigateTo($"/session/{_sessionId}#key={_encryptionKey}");
@@ -118,7 +112,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public async Task JoinAsync(string name) {
         name = name.Trim();
-
         _participantId = await _server!.JoinSessionAsync(_sessionId!, await EncryptAsync(name));
 
         NotifyUpdate();
@@ -224,7 +217,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public async Task OnParticipantAdded(string participantId, string name) {
         name = await DecryptAsync(name);
-
         Session = Session! with { Participants = [.. Session!.Participants, new(participantId, name, "", 0)] };
 
         if (participantId != _participantId) {

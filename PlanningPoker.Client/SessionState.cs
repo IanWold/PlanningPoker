@@ -80,6 +80,11 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             : Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId)?.Name ?? "Unknown Participant"
         ));
 
+    private void UpdateParticipant(string? participantId, Func<Participant, Participant> update) =>
+        Session = Session! with {
+            Participants = [.. Session!.Participants.Select(p => p.ParticipantId == participantId ? update(p) : p)]
+        };
+
     public void AddPoint(string point) =>
         _server!.AddPointAsync(_sessionId!, point.Trim()).Forget();
 
@@ -183,12 +188,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _server!.UpdateParticipantNameAsync(_sessionId!, await EncryptAsync(name)).Forget();
 
-        Session = Session! with {
-            Participants = [
-                .. Session!.Participants.Where(p => p.ParticipantId != _participantId),
-                Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Name = name }
-            ]
-        };
+        UpdateParticipant(_participantId, p => p with { Name = name });
 
         NotifyUpdate();
     }
@@ -202,12 +202,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _server!.UpdateParticipantPointsAsync(_sessionId!, points).Forget();
 
-        Session = Session! with {
-            Participants = [
-                .. Session!.Participants.Where(p => p.ParticipantId != _participantId),
-                Session!.Participants.Single(p => p.ParticipantId == _participantId) with { Points = points }
-            ]
-        };
+        UpdateParticipant(_participantId, p => p with { Points = points });
 
         NotifyUpdate();
     }
@@ -220,9 +215,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _server!.UpdateSessionTitleAsync(_sessionId!, await EncryptAsync(title)).Forget();
 
-        Session = Session! with {
-            Title = title
-        };
+        Session = Session! with { Title = title };
 
         NotifyUpdate();
     }
@@ -232,9 +225,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task OnParticipantAdded(string participantId, string name) {
         name = await DecryptAsync(name);
 
-        Session = Session! with {
-            Participants = [.. Session!.Participants, new(participantId, name, "", 0)]
-        };
+        Session = Session! with { Participants = [.. Session!.Participants, new(participantId, name, "", 0)] };
 
         if (participantId != _participantId) {
             toast.Add($"{name} has joined!");
@@ -246,17 +237,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public async Task OnParticipantNameUpdated(string participantId, string name) {
         name = await DecryptAsync(name);
         var previousName = Session!.Participants.Single(p => p.ParticipantId == participantId).Name;
-        
-        Session = Session! with {
-            Participants = [..
-                Session!.Participants
-                .Select(p =>
-                    p.ParticipantId == participantId
-                    ? p with { Name = name }
-                    : p
-                )
-            ]
-        };
+
+        UpdateParticipant(participantId, p => p with { Name = name });
 
         if (participantId != _participantId) {
             toast.Add($"{previousName} changed their name to {name}");
@@ -266,16 +248,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     }
 
     public Task OnParticipantPointsUpdated(string participantId, string points) {
-        Session = Session! with {
-            Participants = [..
-                Session!.Participants
-                .Select(p =>
-                    p.ParticipantId == participantId
-                    ? p with { Points = points }
-                    : p
-                )
-            ]
-        };
+        UpdateParticipant(participantId, p => p with { Points = points });
 
         NotifyUpdate();
         return Task.CompletedTask;
@@ -300,9 +273,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     }
 
     public Task OnPointAdded(string point, string actingParticipantId) {
-        Session = Session! with {
-            Points = [.. Session!.Points, point]
-        };
+        Session = Session! with { Points = [.. Session!.Points, point] };
 
         NotifyParticipantAction(actingParticipantId, name => $"{name} added point option \"{point}\"");
         NotifyUpdate();
@@ -310,9 +281,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     }
 
     public Task OnPointRemoved(string point, string actingParticipantId) {
-        Session = Session! with {
-            Points = [.. Session!.Points.Except([point])]
-        };
+        Session = Session! with { Points = [.. Session!.Points.Except([point])] };
 
         NotifyParticipantAction(actingParticipantId, name => $"{name} removed point option \"{point}\"");
         NotifyUpdate();
@@ -320,16 +289,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     }
 
     public Task OnStarSentToParticipant(string participantId) {
-        Session = Session! with {
-            Participants = [..
-                Session!.Participants
-                .Select(p =>
-                    p.ParticipantId == participantId
-                    ? p with { Stars = p.Stars + 1 }
-                    : p
-                )
-            ]
-        };
+        UpdateParticipant(participantId, p => p with { Stars = p.Stars + 1 });
 
         NotifyUpdate();
         return Task.CompletedTask;
@@ -350,9 +310,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     }
 
     public async Task OnTitleUpdated(string title, string actingParticipantId) {
-        Session = Session! with {
-            Title = await DecryptAsync(title)
-        };
+        Session = Session! with { Title = await DecryptAsync(title) };
 
         NotifyParticipantAction(actingParticipantId, name => $"{name} updated the title to \"{Session.Title}\"");
         NotifyUpdate();

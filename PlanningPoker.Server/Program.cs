@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.SignalR;
 using PlanningPoker.Server;
 using StackExchange.Redis;
 
@@ -34,6 +35,8 @@ else {
 }
 
 signalRBuilder.AddMessagePackProtocol();
+
+builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
 
 builder.Services.AddRazorPages();
 

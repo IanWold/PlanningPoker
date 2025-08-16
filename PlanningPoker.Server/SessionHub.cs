@@ -3,10 +3,22 @@
 namespace PlanningPoker.Server;
 
 public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
+    public class UserIdProvider : IUserIdProvider {
+        public string? GetUserId(HubConnectionContext connection) {
+            var participantId = connection.GetHttpContext()?.Request.Query["participantId"].ToString()?.Trim();
+
+            if (string.IsNullOrEmpty(participantId)) {
+                connection.Abort();
+            }
+
+            return participantId;
+        }
+    }
+
     public async Task AddPointAsync(string sessionId, string point) {
         store.AddPointAsync(sessionId, point).Forget();
 
-        await Clients.Groups(sessionId).OnPointAdded(point, Context.ConnectionId);
+        await Clients.Groups(sessionId).OnPointAdded(point, Context.UserIdentifier!);
     }
 
     public async Task<Session> ConnectToSessionAsync(string sessionId) {
@@ -29,32 +41,30 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
         return newGuid;
     }
 
-    public async Task<string> JoinSessionAsync(string sessionId, string name) {
+    public async Task JoinSessionAsync(string sessionId, string name) {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
         if (!await store.ExistsSessionAsync(sessionId)) {
             throw new InvalidOperationException($"Session {sessionId} does not exist.");
         }
 
-        store.CreateParticipantAsync(sessionId, Context.ConnectionId, name).Forget();
+        store.CreateParticipantAsync(sessionId, Context.UserIdentifier!, name).Forget();
 
-        await Clients.Group(sessionId.ToString()).OnParticipantAdded(Context.ConnectionId, name);
-
-        return Context.ConnectionId;
+        await Clients.Group(sessionId.ToString()).OnParticipantAdded(Context.UserIdentifier!, name);
     }
 
     public async Task DisconnectFromSessionAsync(string sessionId) {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.ToString());
 
-        store.DeleteParticipantAsync(sessionId, Context.ConnectionId).Forget();
+        store.DeleteParticipantAsync(sessionId, Context.UserIdentifier!).Forget();
 
-        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.ConnectionId);
+        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantRemoved(Context.UserIdentifier!);
     }
 
     public async Task RemovePointAsync(string sessionId, string point) {
         store.RemovePointAsync(sessionId, point).Forget();
 
-        await Clients.Groups(sessionId).OnPointRemoved(point, Context.ConnectionId);
+        await Clients.Groups(sessionId).OnPointRemoved(point, Context.UserIdentifier!);
     }
 
     public async Task SendStarToParticipantAsync(string sessionId, string participantId) {
@@ -64,9 +74,9 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
     }
 
     public async Task UpdateParticipantPointsAsync(string sessionId, string points) {
-        store.UpdateParticipantPointsAsync(sessionId, Context.ConnectionId, points).Forget();
+        store.UpdateParticipantPointsAsync(sessionId, Context.UserIdentifier!, points).Forget();
 
-        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(Context.ConnectionId, points);
+        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantPointsUpdated(Context.UserIdentifier!, points);
     }
 
     public async Task UpdateSessionStateAsync(string sessionId, State state) {
@@ -76,7 +86,7 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
             store.UpdateAllParticipantPointsAsync(sessionId).Forget();
         }
 
-        await Clients.Group(sessionId.ToString()).OnStateUpdated(state, Context.ConnectionId);
+        await Clients.Group(sessionId.ToString()).OnStateUpdated(state, Context.UserIdentifier!);
     }
 
     public async Task UpdateSessionTitleAsync(string sessionId, string title) {
@@ -84,14 +94,14 @@ public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
 
         store.UpdateSessionTitleAsync(sessionId, title).Forget();
         
-        await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title, Context.ConnectionId);
+        await Clients.OthersInGroup(sessionId.ToString()).OnTitleUpdated(title, Context.UserIdentifier!);
     }
 
     public async Task UpdateParticipantNameAsync(string sessionId, string name) {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
-        store.UpdateParticipantNameAsync(sessionId, Context.ConnectionId, name).Forget();
+        store.UpdateParticipantNameAsync(sessionId, Context.UserIdentifier!, name).Forget();
 
-        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantNameUpdated(Context.ConnectionId, name);
+        await Clients.OthersInGroup(sessionId.ToString()).OnParticipantNameUpdated(Context.UserIdentifier!, name);
     }
 }

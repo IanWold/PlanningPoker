@@ -7,10 +7,11 @@ namespace PlanningPoker.Client;
 public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime, ToastState toast) : ISessionHubClient, IDisposable {
     #region Internal State
 
+    private readonly string _participantId = Guid.NewGuid().ToString();
+
     private HubConnection? _connection;
     private ISessionHub? _server;
     private string? _sessionId;
-    private string? _participantId;
     private bool _isUpdateBelayed = false;
     private string _encryptionKey = string.Empty;
 
@@ -23,9 +24,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public Session? Session { get; private set; }
 
     public Participant? Self =>
-        _participantId is null
-        ? null
-        : Session?.Participants?.FirstOrDefault(p => p.ParticipantId == _participantId);
+        Session?.Participants?.FirstOrDefault(p => p.ParticipantId == _participantId);
 
     public IEnumerable<Participant> Others =>
         Session?.Participants?.Where(p => p.ParticipantId != _participantId) ?? [];
@@ -49,7 +48,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
 
         _connection = new HubConnectionBuilder()
-            .WithUrl(navigationManager.ToAbsoluteUri("/sessions/hub"))
+            .WithUrl(navigationManager.ToAbsoluteUri($"/sessions/hub?participantId={_participantId}"))
             .WithStatefulReconnect()
             .AddMessagePackProtocol()
             .Build();
@@ -112,7 +111,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public async Task JoinAsync(string name) {
         name = name.Trim();
-        _participantId = await _server!.JoinSessionAsync(_sessionId!, await EncryptAsync(name));
+        await _server!.JoinSessionAsync(_sessionId!, await EncryptAsync(name));
 
         NotifyUpdate();
     }
@@ -129,7 +128,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _sessionId = null;
         Session = null;
-        _participantId = null;
 
         _connection = null;
         _server = null;

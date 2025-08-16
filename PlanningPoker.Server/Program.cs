@@ -1,12 +1,27 @@
+using AspNetCore.SignalR.OpenTelemetry;
 using Microsoft.AspNetCore.SignalR;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using PlanningPoker.Server;
 using StackExchange.Redis;
+using OpenTelemetry.Metrics;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(
     new WebApplicationOptions {
         Args = args,
         ContentRootPath = "./"
     }
+);
+
+builder.Host.UseSerilog((_, c) => c
+    .WriteTo.Console()
+    .WriteTo.OpenTelemetry(
+        endpoint: Environment.GetEnvironmentVariable("OTEL_COLLECTOR_ENDPOINT")!,
+        resourceAttributes: new Dictionary<string, object> {
+            { "service.name", builder.Environment.ApplicationName }
+        }
+    )
 );
 
 if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } portVar && int.TryParse(portVar, out int port)) {
@@ -17,7 +32,9 @@ if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } p
     );
 }
 
-var signalRBuilder = builder.Services.AddSignalR();
+var signalRBuilder = builder.Services.AddSignalR()
+    .AddMessagePackProtocol()
+    .AddHubInstrumentation();
 
 if (builder.Configuration.GetConnectionString("Redis") is string redisConnectionString && !string.IsNullOrEmpty(redisConnectionString)) {
     builder.Services.AddSingleton<IConnectionMultiplexer>(await ConnectionMultiplexer.ConnectAsync(redisConnectionString));
@@ -34,11 +51,27 @@ else {
     builder.Services.AddTransient<IStore, InMemoryStore>();
 }
 
-signalRBuilder.AddMessagePackProtocol();
-
 builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
 
 builder.Services.AddRazorPages();
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(b => b
+        .AddSignalRInstrumentation()
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .ConfigureResource(c => {
+            c.AddService(builder.Environment.ApplicationName);
+        })
+        .AddOtlpExporter(c => {
+            c.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTEL_COLLECTOR_ENDPOINT")!);
+        })
+    )
+    .WithMetrics(b => b
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddPrometheusExporter()
+    );
 
 var app = builder.Build();
 
@@ -55,6 +88,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.MapRazorPages();
+app.MapPrometheusScrapingEndpoint("/metrics");
 app.MapHub<SessionHub>("/sessions/hub");
 app.MapFallbackToFile("index.html");
 

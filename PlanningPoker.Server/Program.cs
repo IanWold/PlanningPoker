@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.SignalR;
 using PlanningPoker.Server;
 using StackExchange.Redis;
 
@@ -35,6 +36,8 @@ else {
 
 signalRBuilder.AddMessagePackProtocol();
 
+builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
+
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
@@ -52,9 +55,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.MapRazorPages();
-app.MapHub<SessionHub>("/sessions/hub", options => {
-    options.AllowStatefulReconnects = true;
-});
+app.MapHub<SessionHub>("/sessions/hub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

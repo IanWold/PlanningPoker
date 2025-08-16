@@ -7,10 +7,11 @@ namespace PlanningPoker.Client;
 public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime, ToastState toast) : ISessionHubClient, IDisposable {
     #region Internal State
 
+    private readonly string _participantId = Guid.NewGuid().ToString();
+
     private HubConnection? _connection;
     private ISessionHub? _server;
     private string? _sessionId;
-    private string? _participantId;
     private bool _isUpdateBelayed = false;
     private string _encryptionKey = string.Empty;
 
@@ -23,9 +24,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     public Session? Session { get; private set; }
 
     public Participant? Self =>
-        _participantId is null
-        ? null
-        : Session?.Participants?.FirstOrDefault(p => p.ParticipantId == _participantId);
+        Session?.Participants?.FirstOrDefault(p => p.ParticipantId == _participantId);
 
     public IEnumerable<Participant> Others =>
         Session?.Participants?.Where(p => p.ParticipantId != _participantId) ?? [];
@@ -34,6 +33,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public string SessionUrl =>
         $"https://freeplanningpoker.io/session/{_sessionId}#key={_encryptionKey}";
+
+    public bool IsReconnecting { get; set; }
 
     #endregion
 
@@ -49,17 +50,36 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         }
 
         _connection = new HubConnectionBuilder()
-            .WithUrl(navigationManager.ToAbsoluteUri("/sessions/hub"))
-            .WithStatefulReconnect()
+            .WithUrl(navigationManager.ToAbsoluteUri($"/sessions/hub?participantId={_participantId}"))
+            .WithAutomaticReconnect()
             .AddMessagePackProtocol()
             .Build();
 
         _connection.ClientRegistration<ISessionHubClient>(this);
         _server = _connection.ServerProxy<ISessionHub>();
+
+        _connection.Reconnecting += OnReconnecting;
+        _connection.Reconnected += OnReconnected;
         
         await jsRuntime.InvokeVoidAsync("setupSignalRBeforeUnloadListener", DotNetObjectReference.Create(this));
         
         await _connection.StartAsync();
+    }
+
+    private async Task HydrateSessionAsync() {
+        var encryptedSession = await _server!.ConnectToSessionAsync(_sessionId!);
+        var decryptedParticipants = new List<Participant>();
+
+        foreach (var participant in encryptedSession.Participants) {
+            decryptedParticipants.Add(participant with { Name = await DecryptAsync(participant.Name) });
+        }
+
+        Session = encryptedSession with {
+            Title = await DecryptAsync(encryptedSession.Title),
+            Participants = decryptedParticipants
+        };
+
+        NotifyUpdate();
     }
 
     private void NotifyUpdate() {
@@ -112,7 +132,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public async Task JoinAsync(string name) {
         name = name.Trim();
-        _participantId = await _server!.JoinSessionAsync(_sessionId!, await EncryptAsync(name));
+        await _server!.JoinSessionAsync(_sessionId!, await EncryptAsync(name));
 
         NotifyUpdate();
     }
@@ -129,7 +149,6 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _sessionId = null;
         Session = null;
-        _participantId = null;
 
         _connection = null;
         _server = null;
@@ -153,21 +172,9 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         _sessionId = sessionId;
         _encryptionKey = await jsRuntime.InvokeAsync<string>("getEncryptionKey") ?? string.Empty;
-        
-        var encryptedSession = await _server!.ConnectToSessionAsync(_sessionId!);
-        var decryptedParticipants = new List<Participant>();
-
-        foreach (var participant in encryptedSession.Participants) {
-            decryptedParticipants.Add(participant with { Name = await DecryptAsync(participant.Name )});
-        }
-
-        Session = encryptedSession with {
-            Title = await DecryptAsync(encryptedSession.Title),
-            Participants = decryptedParticipants
-        };
-
         _isUpdateBelayed = false;
-        NotifyUpdate();
+
+        await HydrateSessionAsync();
     }
 
     public void RemovePoint(string point) =>
@@ -212,6 +219,20 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         NotifyUpdate();
     }
+
+    #region Connection Events
+
+    private Task OnReconnecting(Exception? exception) {
+        IsReconnecting = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnReconnected(string? connectionId) {
+        IsReconnecting = false;
+        await HydrateSessionAsync();
+    }
+
+    #endregion
 
     #region ISessionHubClient Implementation
 

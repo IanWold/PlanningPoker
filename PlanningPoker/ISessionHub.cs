@@ -4,7 +4,7 @@ public interface ISessionHub {
     Task AddPointAsync(string sessionId, string point);
     Task<Session> ConnectToSessionAsync(string sessionId);
     Task<string> CreateSessionAsync(string title, IEnumerable<string> points);
-    Task<string> JoinSessionAsync(string sessionId, string name);
+    Task JoinSessionAsync(string sessionId, string name);
     Task DisconnectFromSessionAsync(string sessionId);
     Task RemovePointAsync(string sessionId, string point);
     Task SendStarToParticipantAsync(string sessionId, string participantId);

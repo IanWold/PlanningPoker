@@ -55,9 +55,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.MapRazorPages();
-app.MapHub<SessionHub>("/sessions/hub", options => {
-    options.AllowStatefulReconnects = true;
-});
+app.MapHub<SessionHub>("/sessions/hub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

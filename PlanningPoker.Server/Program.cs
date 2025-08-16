@@ -1,4 +1,7 @@
+using AspNetCore.SignalR.OpenTelemetry;
 using Microsoft.AspNetCore.SignalR;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using PlanningPoker.Server;
 using StackExchange.Redis;
 
@@ -17,7 +20,9 @@ if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } p
     );
 }
 
-var signalRBuilder = builder.Services.AddSignalR();
+var signalRBuilder = builder.Services.AddSignalR()
+    .AddMessagePackProtocol()
+    .AddHubInstrumentation();
 
 if (builder.Configuration.GetConnectionString("Redis") is string redisConnectionString && !string.IsNullOrEmpty(redisConnectionString)) {
     builder.Services.AddSingleton<IConnectionMultiplexer>(await ConnectionMultiplexer.ConnectAsync(redisConnectionString));
@@ -34,11 +39,18 @@ else {
     builder.Services.AddTransient<IStore, InMemoryStore>();
 }
 
-signalRBuilder.AddMessagePackProtocol();
-
 builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
 
 builder.Services.AddRazorPages();
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracerProviderBuilder => {
+        tracerProviderBuilder
+            .AddSignalRInstrumentation()
+            .AddAspNetCoreInstrumentation()
+            .ConfigureResource(b => b.AddService(builder.Environment.ApplicationName))
+            .AddConsoleExporter();
+    });
 
 var app = builder.Build();
 

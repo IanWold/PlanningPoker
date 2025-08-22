@@ -10,7 +10,14 @@ var builder = WebApplication.CreateBuilder(
     }
 );
 
-builder.ConfigureTelemetry();
+var otlpOptions = new TelemetryConfigurator.Options(
+    Url: Environment.GetEnvironmentVariable("OTLP_URL"),
+    ApplicationName: builder.Environment.ApplicationName,
+    Environment: builder.Environment.EnvironmentName,
+    Version: "1.0.0"
+);
+
+builder.ConfigureTelemetry(otlpOptions);
 
 if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } portVar && int.TryParse(portVar, out int port)) {
     builder.WebHost.ConfigureKestrel(
@@ -43,7 +50,7 @@ builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
 
 builder.Services.AddRazorPages();
 
-builder.Services.ConfigureTelemetry(builder.Environment.ApplicationName);
+builder.Services.ConfigureTelemetry(otlpOptions);
 
 var app = builder.Build();
 

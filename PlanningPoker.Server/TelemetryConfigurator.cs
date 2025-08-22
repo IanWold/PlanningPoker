@@ -3,55 +3,57 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Exporter;
 
 namespace PlanningPoker.Server;
 
 public static class TelemetryConfigurator {
-    public static void ConfigureTelemetry(this WebApplicationBuilder builder) {
+    public record Options(string? Url, string ApplicationName, string Environment, string Version) {
+        public bool HasTelemetry => Url is not null;
+
+        public ResourceBuilder GetResourceBuilder(ResourceBuilder resourceBuilder) =>
+            resourceBuilder
+            .AddService(serviceName: ApplicationName, serviceVersion: Version)
+            .AddAttributes(
+            [
+                new KeyValuePair<string, object>("deployment.environment", Environment)
+            ]);
+
+        public void ConfigureExporter(OtlpExporterOptions options) {
+            options.Endpoint = new Uri(Url!);
+            options.Protocol = OtlpExportProtocol.HttpProtobuf;
+        }
+    }
+
+    public static void ConfigureTelemetry(this WebApplicationBuilder builder, Options options) {
+        if (!options.HasTelemetry) {
+            return;
+        }
+
         builder.Logging.AddOpenTelemetry(logging => {
             logging.IncludeScopes = true;
             logging.IncludeFormattedMessage = true;
             logging.ParseStateValues = true;
-            logging.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName: "PlanningPoker.Server", serviceVersion: "1.0.0")
-            .AddAttributes(
-            [
-                new KeyValuePair<string, object>("deployment.environment", builder.Environment.ApplicationName)
-            ]));
-            logging.AddOtlpExporter();
+            logging.SetResourceBuilder(options.GetResourceBuilder(ResourceBuilder.CreateDefault()));
+            logging.AddOtlpExporter(options.ConfigureExporter);
         });
     }
 
-    public static void ConfigureTelemetry(this IServiceCollection services, string applicationName) {
+    public static void ConfigureTelemetry(this IServiceCollection services, Options options) {
+        if (!options.HasTelemetry) {
+            return;
+        }
+
         services
         .AddOpenTelemetry()
-        .ConfigureResource(rb => rb
-            .AddService(serviceName: "PlanningPoker.Server", serviceVersion: "1.0.0")
-            .AddAttributes(
-            [
-                new KeyValuePair<string, object>("deployment.environment", applicationName)
-            ])
-        )
+        .ConfigureResource(rb => options.GetResourceBuilder(rb))
         .WithTracing(b => b
             .AddSignalRInstrumentation()
             .AddAspNetCoreInstrumentation(c => {
                 c.RecordException = true;
             })
             .AddHttpClientInstrumentation()
-            .AddOtlpExporter()
-        )
-        .WithMetrics(b => b
-            .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
-            .AddRuntimeInstrumentation()
-            .AddProcessInstrumentation()
-            .AddMeter(
-                "Microsoft.AspNetCore.Hosting",
-                "Microsoft.AspNetCore.Server.Kestrel",
-                "Microsoft.AspNetCore.Routing",
-                "Microsoft.AspNetCore.Http.Connections",
-                "Microsoft.AspNetCore.SignalR"
-            )
-            .AddOtlpExporter()
+            .AddOtlpExporter(options.ConfigureExporter)
         );
     }
 }

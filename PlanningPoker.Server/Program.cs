@@ -1,11 +1,7 @@
 using AspNetCore.SignalR.OpenTelemetry;
 using Microsoft.AspNetCore.SignalR;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using PlanningPoker.Server;
 using StackExchange.Redis;
-using OpenTelemetry.Metrics;
-using Serilog;
 
 var builder = WebApplication.CreateBuilder(
     new WebApplicationOptions {
@@ -14,15 +10,7 @@ var builder = WebApplication.CreateBuilder(
     }
 );
 
-builder.Host.UseSerilog((_, c) => c
-    .WriteTo.Console()
-    .WriteTo.OpenTelemetry(
-        endpoint: Environment.GetEnvironmentVariable("OTEL_COLLECTOR_ENDPOINT")!,
-        resourceAttributes: new Dictionary<string, object> {
-            { "service.name", builder.Environment.ApplicationName }
-        }
-    )
-);
+builder.ConfigureTelemetry();
 
 if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } portVar && int.TryParse(portVar, out int port)) {
     builder.WebHost.ConfigureKestrel(
@@ -55,23 +43,7 @@ builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
 
 builder.Services.AddRazorPages();
 
-builder.Services.AddOpenTelemetry()
-    .WithTracing(b => b
-        .AddSignalRInstrumentation()
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .ConfigureResource(c => {
-            c.AddService(builder.Environment.ApplicationName);
-        })
-        .AddOtlpExporter(c => {
-            c.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTEL_COLLECTOR_ENDPOINT")!);
-        })
-    )
-    .WithMetrics(b => b
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddPrometheusExporter()
-    );
+builder.Services.ConfigureTelemetry(builder.Environment.ApplicationName);
 
 var app = builder.Build();
 
@@ -88,7 +60,6 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.MapRazorPages();
-app.MapPrometheusScrapingEndpoint("/metrics");
 app.MapHub<SessionHub>("/sessions/hub");
 app.MapFallbackToFile("index.html");
 

@@ -21,7 +21,6 @@ public static class TelemetryConfigurator {
 
         public void ConfigureExporter(OtlpExporterOptions options) {
             options.Endpoint = new Uri(Url!);
-            options.Protocol = OtlpExportProtocol.HttpProtobuf;
         }
     }
 

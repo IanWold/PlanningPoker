@@ -14,7 +14,7 @@ Note that I've just started development on this so some documentation and whatno
 The ideal scenario is that you can "clone and go" without much (if any) work, but there's a couple steps you need right now:
 
 1. [Fork](https://github.com/IanWold/PlanningPoker/fork) and clone this repo
-2. Download and install the [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+2. Download and install the [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 3. I recommend using VSCode with the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit&WT.mc_id=dotnet-35129-website)
 
 You should be good to go now - hit F5 and watch it run! By default it will use an in-memory store to keep state. This store is _not_ thread safe; in order to get thread safety (and to allow SignalR to use a backplane) you'll need to provide a connection string for Redis. However, the in-memory store is fast and ideal for local debugging scenarios.

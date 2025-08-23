@@ -1,10 +1,32 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using Timer = System.Timers.Timer;
 
 namespace PlanningPoker.Client;
 
-public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime, ToastState toast) : ISessionHubClient, IDisposable {
+public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : ISessionHubClient, IDisposable {
+    public class Toast {
+        readonly Timer _timer = new(5000);
+
+        public string Message { get; init; }
+
+        public DateTime Time { get; } = DateTime.Now;
+
+        public bool IsExpired { get; set; }
+
+        public Toast(string message, EventHandler? stateChanged) {
+            Message = message;
+
+            _timer.Elapsed += (_, _) => {
+                IsExpired = true;
+                stateChanged?.Invoke(this, EventArgs.Empty);
+                _timer.Dispose();
+            };
+            _timer.Start();
+        }
+    }
+
     #region Internal State
 
     private readonly string _participantId = Guid.NewGuid().ToString();
@@ -23,6 +45,9 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public Session? Session { get; private set; }
 
+    public string SessionUrl =>
+        $"https://freeplanningpoker.io/session/{_sessionId}#key={_encryptionKey}";
+
     public Participant? Self =>
         Session?.Participants?.FirstOrDefault(p => p.ParticipantId == _participantId);
 
@@ -31,8 +56,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     public bool ShowShareNotification { get; private set; }
 
-    public string SessionUrl =>
-        $"https://freeplanningpoker.io/session/{_sessionId}#key={_encryptionKey}";
+    public IEnumerable<Toast> Toasts { get; private set; } = [];
 
     public bool IsReconnecting { get; set; }
 
@@ -82,14 +106,18 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    private void NotifyUpdate() {
+    private void NotifyUpdate(string? message = null) {
+        if (message is not null) {
+            Toasts = [.. Toasts, new Toast(message, OnStateChanged)];
+        }
+
         if (!_isUpdateBelayed) {
             OnStateChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
-    private void NotifyParticipantAction(string participantId, Func<string, string> message) =>
-        toast.Add(message(
+    private void NotifyUpdate(string participantId, Func<string, string> message) =>
+        NotifyUpdate(message(
             participantId == _participantId
             ? "You"
             : Session!.Participants.FirstOrDefault(p => p.ParticipantId == participantId)?.Name ?? "Unknown Participant"
@@ -240,11 +268,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         name = await DecryptAsync(name);
         Session = Session! with { Participants = [.. Session!.Participants, new(participantId, name, "", 0)] };
 
-        if (participantId != _participantId) {
-            toast.Add($"{name} has joined!");
-        }
-
-        NotifyUpdate();
+        NotifyUpdate(participantId != _participantId
+            ? $"{name} has joined!"
+            : null
+        );
     }
 
     public async Task OnParticipantNameUpdated(string participantId, string name) {
@@ -253,11 +280,10 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
         UpdateParticipant(participantId, p => p with { Name = name });
 
-        if (participantId != _participantId) {
-            toast.Add($"{previousName} changed their name to {name}");
-        }
-
-        NotifyUpdate();
+        NotifyUpdate(participantId != _participantId
+            ? $"{previousName} changed their name to {name}"
+            : null
+        );
     }
 
     public Task OnParticipantPointsUpdated(string participantId, string points) {
@@ -277,27 +303,24 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             ]
         };
 
-        if (participantId != _participantId) {
-            toast.Add($"{name} has left");
-        }
-
-        NotifyUpdate();
+        NotifyUpdate(participantId != _participantId
+            ? $"{name} has left"
+            : null
+        );
         return Task.CompletedTask;
     }
 
     public Task OnPointAdded(string point, string actingParticipantId) {
         Session = Session! with { Points = [.. Session!.Points, point] };
 
-        NotifyParticipantAction(actingParticipantId, name => $"{name} added point option \"{point}\"");
-        NotifyUpdate();
+        NotifyUpdate(actingParticipantId, name => $"{name} added point option \"{point}\"");
         return Task.CompletedTask;
     }
 
     public Task OnPointRemoved(string point, string actingParticipantId) {
         Session = Session! with { Points = [.. Session!.Points.Except([point])] };
 
-        NotifyParticipantAction(actingParticipantId, name => $"{name} removed point option \"{point}\"");
-        NotifyUpdate();
+        NotifyUpdate(actingParticipantId, name => $"{name} removed point option \"{point}\"");
         return Task.CompletedTask;
     }
 
@@ -317,16 +340,14 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
                 : [.. Session!.Participants.Select(p => p with { Points = "" })]
         };
 
-        NotifyParticipantAction(actingParticipantId, name => $"{name} {(name == "You" ? "have" : "has")} {Enum.GetName(state)!.ToLower()} the cards");
-        NotifyUpdate();
+        NotifyUpdate(actingParticipantId, name => $"{name} {(name == "You" ? "have" : "has")} {Enum.GetName(state)!.ToLower()} the cards");
         return Task.CompletedTask;
     }
 
     public async Task OnTitleUpdated(string title, string actingParticipantId) {
         Session = Session! with { Title = await DecryptAsync(title) };
 
-        NotifyParticipantAction(actingParticipantId, name => $"{name} updated the title to \"{Session.Title}\"");
-        NotifyUpdate();
+        NotifyUpdate(actingParticipantId, name => $"{name} updated the title to \"{Session.Title}\"");
     }
 
     #endregion

@@ -1,4 +1,4 @@
-@inject ToastState _state
+@inject SessionState _state
 
 <div>
     <button type="button" class="m-2 btn btn-square btn-outline-secondary border-0 dropdown-toggle caret-off" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
@@ -9,8 +9,8 @@
             <p class="m-0 py-2 fw-bold">Notification History</p>
         </div>
         <div style=" max-height: 75vh; overflow-y: auto;">
-            @if (_state.History.Any()) {
-                @foreach (var notification in _state.History.OrderBy(n => n.Time)) {
+            @if (_state.Toasts.Any()) {
+                @foreach (var notification in _state.Toasts.OrderBy(n => n.Time)) {
                     <div class="dropdown-divider"></div>
                     <div class="px-3 py-1">
                         <p class="m-0"><span class="text-secondary pe-2">@(notification.Time.ToString("h:mm"))</span> @notification.Message</p>

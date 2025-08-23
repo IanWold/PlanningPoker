@@ -10,6 +10,4 @@ The `Participant` model keeps all of the information for a single participant. E
 
 SignalR, as it is used in this repository, requires two interfaces - one interface for the server (to accept messages from the client), and one interface for the client (to accept messages from the server).
 
-`ISessionHub` is the interface for the server, and `ISessionHubClient` is the interface for the client. As a side note, I wonder if naming the latter interface `ISessionClient` is better. Unsure.
-
-`ISessionHub` defines commands for the client to send to the server, and `ISessionHubClient` defines events for the server to trigger on the client; the style for this repository is to keep that call pattern. 
+`IServer` defines commands for the client to send to the server, and `IClient` defines events for the server to trigger on the client; the style for this repository is to keep that call pattern. 

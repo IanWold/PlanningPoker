@@ -1,12 +1,15 @@
 ﻿namespace PlanningPoker;
 
-public interface ISessionHub {
+/// <summary>
+/// The server contract
+/// </summary>
+public interface IServer {
     /// <summary>
     /// Adds a point option to the session, which then becomes available for all participants to select as their estimate during a pointing round.
     /// </summary>
     /// <param name="sessionId">The session to update</param>
     /// <param name="point">The point option to add</param>
-    /// <seealso cref="ISessionHubClient.OnPointAdded(string, string)"/>
+    /// <seealso cref="IClient.OnPointAdded(string, string)"/>
     Task AddPointAsync(string sessionId, string point);
 
     /// <summary>
@@ -35,14 +38,14 @@ public interface ISessionHub {
     /// <param name="name">The name of the participant</param>
     /// <exception cref="ArgumentException">When <paramref name="name"/> is null or whitespace</exception>
     /// <exception cref="InvalidOperationException">When <paramref name="sessionId"/> does not exist</exception>
-    /// <seealso cref="ISessionHubClient.OnParticipantAdded(string, string)"/>
+    /// <seealso cref="IClient.OnParticipantAdded(string, string)"/>
     Task JoinSessionAsync(string sessionId, string name);
 
     /// <summary>
     /// Disconnects a client from the server and removes the client as a participant frmo the session.
     /// </summary>
     /// <param name="sessionId">The session from which the client is disconnecting</param>
-    /// <seealso cref="ISessionHubClient.OnParticipantRemoved(string)"/>
+    /// <seealso cref="IClient.OnParticipantRemoved(string)"/>
     Task DisconnectFromSessionAsync(string sessionId);
 
     /// <summary>
@@ -50,7 +53,7 @@ public interface ISessionHub {
     /// </summary>
     /// <param name="sessionId">The session to update</param>
     /// <param name="point">The point option to remove</param>
-    /// <seealso cref="ISessionHubClient.OnPointRemoved(string, string)"/>
+    /// <seealso cref="IClient.OnPointRemoved(string, string)"/>
     Task RemovePointAsync(string sessionId, string point);
 
     /// <summary>
@@ -58,7 +61,7 @@ public interface ISessionHub {
     /// </summary>
     /// <param name="sessionId">The session to update</param>
     /// <param name="participantId">The participant to whom the star will be "sent"</param>
-    /// <seealso cref="ISessionHubClient.OnStarSentToParticipant(string)"/>
+    /// <seealso cref="IClient.OnStarSentToParticipant(string)"/>
     Task SendStarToParticipantAsync(string sessionId, string participantId);
 
     /// <summary>
@@ -66,7 +69,7 @@ public interface ISessionHub {
     /// </summary>
     /// <param name="sessionId">The session to update</param>
     /// <param name="points">The point option to select for the client</param>
-    /// <seealso cref="ISessionHubClient.OnParticipantPointsUpdated(string, string)"/>
+    /// <seealso cref="IClient.OnParticipantPointsUpdated(string, string)"/>
     Task UpdateParticipantPointsAsync(string sessionId, string points);
 
     /// <summary>
@@ -74,7 +77,7 @@ public interface ISessionHub {
     /// </summary>
     /// <param name="sessionId">The session to update</param>
     /// <param name="state">The state to which the session will be updated</param>
-    /// <seealso cref="ISessionHubClient.OnStateUpdated(State, string)"/>
+    /// <seealso cref="IClient.OnStateUpdated(State, string)"/>
     Task UpdateSessionStateAsync(string sessionId, State state);
 
     /// <summary>
@@ -83,7 +86,7 @@ public interface ISessionHub {
     /// <param name="sessionId">The session to update</param>
     /// <param name="title">The new session title</param>
     /// <exception cref="ArgumentException">When <paramref name="title"/> is null or whitespace</exception>
-    /// <seealso cref="ISessionHubClient.OnTitleUpdated(string, string)"/>
+    /// <seealso cref="IClient.OnTitleUpdated(string, string)"/>
     Task UpdateSessionTitleAsync(string sessionId, string title);
 
     /// <summary>
@@ -92,6 +95,6 @@ public interface ISessionHub {
     /// <param name="sessionId">The session to update</param>
     /// <param name="name">The new participant name</param>
     /// <exception cref="ArgumentException">When <paramref name="name"/> i snull or whitespace</exception>
-    /// <seealso cref="ISessionHubClient.OnParticipantNameUpdated(string, string)"/>
+    /// <seealso cref="IClient.OnParticipantNameUpdated(string, string)"/>
     Task UpdateParticipantNameAsync(string sessionId, string name);
 }

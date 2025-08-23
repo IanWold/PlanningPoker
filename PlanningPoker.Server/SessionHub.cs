@@ -2,7 +2,7 @@
 
 namespace PlanningPoker.Server;
 
-public class SessionHub(IStore store) : Hub<ISessionHubClient>, ISessionHub {
+public class SessionHub(IStore store) : Hub<IClient>, IServer {
     public class UserIdProvider : IUserIdProvider {
         public string? GetUserId(HubConnectionContext connection) {
             var participantId = connection.GetHttpContext()?.Request.Query["participantId"].ToString()?.Trim();

@@ -5,7 +5,7 @@ using Timer = System.Timers.Timer;
 
 namespace PlanningPoker.Client;
 
-public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : ISessionHubClient, IDisposable {
+public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : IClient, IDisposable {
     public class Toast {
         readonly Timer _timer = new(5000);
 
@@ -32,7 +32,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
     private readonly string _participantId = Guid.NewGuid().ToString();
 
     private HubConnection? _connection;
-    private ISessionHub? _server;
+    private IServer? _server;
     private string? _sessionId;
     private bool _isUpdateBelayed = false;
     private string _encryptionKey = string.Empty;
@@ -79,8 +79,8 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             .AddMessagePackProtocol()
             .Build();
 
-        _connection.ClientRegistration<ISessionHubClient>(this);
-        _server = _connection.ServerProxy<ISessionHub>();
+        _connection.ClientRegistration<IClient>(this);
+        _server = _connection.ServerProxy<IServer>();
 
         _connection.Reconnecting += OnReconnecting;
         _connection.Reconnected += OnReconnected;

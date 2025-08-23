@@ -1,12 +1,15 @@
 ﻿namespace PlanningPoker;
 
-public interface ISessionHubClient {
+/// <summary>
+/// The client contract
+/// </summary>
+public interface IClient {
     /// <summary>
     /// When a new participant has joined the session.
     /// </summary>
     /// <param name="participantId">The id of the new participant</param>
     /// <param name="name">The name of the new participant</param>
-    /// <seealso cref="ISessionHub.JoinSessionAsync(string, string)"/>
+    /// <seealso cref="IServer.JoinSessionAsync(string, string)"/>
     Task OnParticipantAdded(string participantId, string name);
 
     /// <summary>
@@ -14,7 +17,7 @@ public interface ISessionHubClient {
     /// </summary>
     /// <param name="participantId">The id of the updated participant</param>
     /// <param name="name">The new name</param>
-    /// <seealso cref="ISessionHub.UpdateParticipantNameAsync(string, string)"/>
+    /// <seealso cref="IServer.UpdateParticipantNameAsync(string, string)"/>
     Task OnParticipantNameUpdated(string participantId, string name);
 
     /// <summary>
@@ -22,14 +25,14 @@ public interface ISessionHubClient {
     /// </summary>
     /// <param name="participantId">The id of the updated participant</param>
     /// <param name="points">The selected point option</param>
-    /// <seealso cref="ISessionHub.UpdateParticipantPointsAsync(string, string)"/>
+    /// <seealso cref="IServer.UpdateParticipantPointsAsync(string, string)"/>
     Task OnParticipantPointsUpdated(string participantId, string points);
 
     /// <summary>
     /// When a participant leaves the session.
     /// </summary>
     /// <param name="participantId">The id of the removed participant</param>
-    /// <seealso cref="ISessionHub.DisconnectFromSessionAsync(string)"/>
+    /// <seealso cref="IServer.DisconnectFromSessionAsync(string)"/>S
     Task OnParticipantRemoved(string participantId);
 
     /// <summary>
@@ -37,7 +40,7 @@ public interface ISessionHubClient {
     /// </summary>
     /// <param name="point">The point option added</param>
     /// <param name="actingParticipantId">The id of the participant who made the update.</param>
-    /// <seealso cref="ISessionHub.AddPointAsync(string, string)"/>
+    /// <seealso cref="IServer.AddPointAsync(string, string)"/>
     Task OnPointAdded(string point, string actingParticipantId);
 
     /// <summary>
@@ -45,14 +48,14 @@ public interface ISessionHubClient {
     /// </summary>
     /// <param name="point">The ponit option removed</param>
     /// <param name="actingParticipantId">The id of the participant who made the update.</param>
-    /// <seealso cref="ISessionHub.RemovePointAsync(string, string)"/>
+    /// <seealso cref="IServer.RemovePointAsync(string, string)"/>
     Task OnPointRemoved(string point, string actingParticipantId);
 
     /// <summary>
     /// When a star has been "sent" to a participant.
     /// </summary>
     /// <param name="participantId">The participant to whom the star has been "sent"</param>
-    /// <seealso cref="ISessionHub.SendStarToParticipantAsync(string, string)"/>
+    /// <seealso cref="IServer.SendStarToParticipantAsync(string, string)"/>
     Task OnStarSentToParticipant(string participantId);
 
     /// <summary>
@@ -60,7 +63,7 @@ public interface ISessionHubClient {
     /// </summary>
     /// <param name="state">The state to which the session has been updated</param>
     /// <param name="actingParticipantId">The id of the participant who made the update.</param>
-    /// <seealso cref="ISessionHub.UpdateSessionStateAsync(string, State)"/>
+    /// <seealso cref="IServer.UpdateSessionStateAsync(string, State)"/>
     Task OnStateUpdated(State state, string actingParticipantId);
 
     /// <summary>
@@ -68,6 +71,6 @@ public interface ISessionHubClient {
     /// </summary>
     /// <param name="title">The new title of the session</param>
     /// <param name="actingParticipantId">The id of the participant who made the update.</param>
-    /// <seealso cref="ISessionHub.UpdateSessionTitleAsync(string, string)"/>
+    /// <seealso cref="IServer.UpdateSessionTitleAsync(string, string)"/>
     Task OnTitleUpdated(string title, string actingParticipantId);
 }

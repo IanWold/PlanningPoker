@@ -9,14 +9,6 @@ var builder = WebApplication.CreateBuilder(
     }
 );
 
-if (Environment.GetEnvironmentVariable("PORT") is not null and { Length: > 0 } portVar && int.TryParse(portVar, out int port)) {
-    builder.WebHost.ConfigureKestrel(
-        options => {
-            options.ListenAnyIP(port);
-        }
-    );
-}
-
 var signalRBuilder = builder.Services.AddSignalR();
 
 if (builder.Configuration.GetConnectionString("Redis") is string redisConnectionString && !string.IsNullOrEmpty(redisConnectionString)) {

@@ -4,12 +4,13 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder();
 
-var signalRBuilder = builder.Services.AddSignalR();
+var signalRBuilder = builder.Services.AddSignalR().AddMessagePackProtocol();
 
 if (builder.Configuration.GetConnectionString("Redis") is string redisConnectionString && !string.IsNullOrEmpty(redisConnectionString)) {
     builder.Services.AddSingleton<IConnectionMultiplexer>(await ConnectionMultiplexer.ConnectAsync(redisConnectionString));
     builder.Services.AddTransient(s => s.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
     builder.Services.AddTransient<IStore, RedisStore>();
+    
     signalRBuilder.AddStackExchangeRedis(
         redisConnectionString,
         options => {
@@ -20,8 +21,6 @@ if (builder.Configuration.GetConnectionString("Redis") is string redisConnection
 else {
     builder.Services.AddTransient<IStore, InMemoryStore>();
 }
-
-signalRBuilder.AddMessagePackProtocol();
 
 builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
 

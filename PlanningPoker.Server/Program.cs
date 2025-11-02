@@ -2,12 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using PlanningPoker.Server;
 using StackExchange.Redis;
 
-var builder = WebApplication.CreateBuilder(
-    new WebApplicationOptions {
-        Args = args,
-        ContentRootPath = "./"
-    }
-);
+var builder = WebApplication.CreateBuilder();
 
 var signalRBuilder = builder.Services.AddSignalR();
 

@@ -38,8 +38,6 @@ signalRBuilder.AddMessagePackProtocol();
 
 builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
 
-builder.Services.AddRazorPages();
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment()) {
@@ -54,7 +52,6 @@ app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 app.UseRouting();
 
-app.MapRazorPages();
 app.MapHub<SessionHub>("/sessions/hub");
 app.MapFallbackToFile("index.html");
 

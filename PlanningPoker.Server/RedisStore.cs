@@ -2,8 +2,7 @@ using StackExchange.Redis;
 
 namespace PlanningPoker.Server;
 
-public class RedisStore(IDatabase database) : IStore
-{
+public class RedisStore(IDatabase database) : IStore {
     public async Task AddPointAsync(string sessionId, string point) =>
         await database.ListRightPushAsync($"{sessionId}:points", point, flags: CommandFlags.FireAndForget);
 

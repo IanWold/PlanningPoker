@@ -6,7 +6,7 @@
         "type": "coreclr",
         "request": "launch",
         "preLaunchTask": "build",
-        "program": "${workspaceFolder}/PlanningPoker.Server/bin/Debug/net9.0/PlanningPoker.Server.dll",
+        "program": "${workspaceFolder}/PlanningPoker.Server/bin/Debug/net10.0/PlanningPoker.Server.dll",
         "args": [],
         "cwd": "${workspaceFolder}/PlanningPoker.Server",
         "stopAtEntry": false,

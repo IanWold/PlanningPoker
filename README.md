@@ -110,7 +110,7 @@ Session data is stored in Redis across several keys to eliminate or minimize rac
 * `{sessionId}:participants`: List with values being the IDs of the participants in the session.
 * `{sessionId}:participants:{participantId}`: Hash with values "Name", "Points", and "Stars".
 
-All entries associated with a session are removed from Redis when the last participant leaves the session.
+All entries associated with a session are removed from Redis when the last participant leaves the session. For extra safety, the keys all have a 24-hour TTL.
 
 ## Client
 

@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using TypedSignalR.Client;
 using Timer = System.Timers.Timer;
 
 namespace PlanningPoker.Client;
 
-public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : IClient, IDisposable {
+public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : IClient, IHubConnectionObserver, IDisposable {
     public class Toast {
         readonly Timer _timer = new(5000);
 
@@ -31,8 +32,11 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     private readonly string _participantId = Guid.NewGuid().ToString();
 
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
     private HubConnection? _connection;
     private IServer? _server;
+    private IDisposable? _serverSubscription;
+
     private string? _sessionId;
     private bool _isUpdateBelayed = false;
     private string _encryptionKey = string.Empty;
@@ -79,12 +83,9 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
             .AddMessagePackProtocol()
             .Build();
 
-        _connection.ClientRegistration<IClient>(this);
-        _server = _connection.ServerProxy<IServer>();
+        _server = _connection.CreateHubProxy<IServer>(_cancellationTokenSource.Token);
+        _serverSubscription = _connection.Register<IClient>(this);
 
-        _connection.Reconnecting += OnReconnecting;
-        _connection.Reconnected += OnReconnected;
-        
         await jsRuntime.InvokeVoidAsync("setupSignalRBeforeUnloadListener", DotNetObjectReference.Create(this));
         
         await _connection.StartAsync();
@@ -248,21 +249,25 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
         NotifyUpdate();
     }
 
-    #region Connection Events
+    #region IHubConnectionObserver Implementation
 
-    private Task OnReconnecting(Exception? exception) {
-        IsReconnecting = true;
-        return Task.CompletedTask;
-    }
-
-    private async Task OnReconnected(string? connectionId) {
+    public async Task OnReconnected(string? connectionId) {
         IsReconnecting = false;
         await HydrateSessionAsync();
     }
 
+    public async Task OnReconnecting(Exception? exception) {
+        IsReconnecting = true;
+    }
+
+    public async Task OnClosed(Exception? exception) {
+        await LeaveAsync();
+        navigationManager.NavigateTo("/" ,true);
+    }
+
     #endregion
 
-    #region ISessionHubClient Implementation
+    #region IClient Implementation
 
     public async Task OnParticipantAdded(string participantId, string name) {
         name = await DecryptAsync(name);
@@ -354,6 +359,7 @@ public class SessionState(NavigationManager navigationManager, IJSRuntime jsRunt
 
     void IDisposable.Dispose() {
         LeaveAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        _serverSubscription?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

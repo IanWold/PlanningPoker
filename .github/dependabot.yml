@@ -8,6 +8,8 @@ updates:
       shared-project:
         patterns:
           - "*"
+    assignees:
+      - "ianwold"
 
   - package-ecosystem: "nuget"
     directory: "/PlanningPoker.Server"
@@ -17,6 +19,8 @@ updates:
       server-project:
         patterns:
           - "*"
+    assignees:
+      - "ianwold"
 
   - package-ecosystem: "nuget"
     directory: "/PlanningPoker.Client"
@@ -26,3 +30,5 @@ updates:
       blazor-client-project:
         patterns:
           - "*"
+    assignees:
+      - "ianwold"

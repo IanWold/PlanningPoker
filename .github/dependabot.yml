@@ -1,6 +1,28 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directory: "/"
+    directory: "/PlanningPoker"
     schedule:
       interval: "weekly"
+    groups:
+      shared-project:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "nuget"
+    directory: "/PlanningPoker.Server"
+    schedule:
+      interval: "weekly"
+    groups:
+      server-project:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "nuget"
+    directory: "/PlanningPoker.Client"
+    schedule:
+      interval: "weekly"
+    groups:
+      blazor-client-project:
+        patterns:
+          - "*"

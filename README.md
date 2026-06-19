@@ -21,8 +21,6 @@ Always Free ♣ Unlimited Sessions ♠ Unlimited Participants
 
 This is Free Planning Poker, a free tool for software teams to do "planning poker" exercises to estimate the difficulty and length of development tasks. You can probably use it for other purposes if you need, too. It's always going to be free, without limits.
 
-Note that I've just started development on this so some documentation and whatnot is a WIP as this gets set up!
-
 # Running Locally
 
 The ideal scenario is that you can "clone and go" without much (if any) work, but there's a couple steps you need right now:

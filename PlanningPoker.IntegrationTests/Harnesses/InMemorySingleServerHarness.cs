@@ -1,4 +1,4 @@
-namespace PlanningPoker.IntegrationTests.Infrastructure;
+namespace PlanningPoker.IntegrationTests;
 
 public class InMemorySingleServerHarness : ITestHarness {
     readonly PlanningPokerFactory _factory = new();

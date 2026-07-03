@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using PlanningPoker.Client;
 
-namespace PlanningPoker.IntegrationTests.Infrastructure;
+namespace PlanningPoker.IntegrationTests;
 
 public class TestSessionState(Uri serverBaseAddress, Func<HttpMessageHandler> handlerFactory) : SessionState(new TestEncryptionService()) {
     protected override Uri GetServerUri() =>

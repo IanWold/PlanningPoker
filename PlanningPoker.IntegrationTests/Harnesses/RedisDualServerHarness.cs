@@ -1,4 +1,4 @@
-namespace PlanningPoker.IntegrationTests.Infrastructure;
+namespace PlanningPoker.IntegrationTests;
 
 // Alternates which of the two servers each new client connects to, so a two-client test
 // exercises the Redis backplane relaying a broadcast from one server instance to the other.

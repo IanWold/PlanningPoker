@@ -1,4 +1,4 @@
-namespace PlanningPoker.IntegrationTests.Infrastructure;
+namespace PlanningPoker.IntegrationTests;
 
 public class RedisSingleServerHarness(RedisFixture redis) : ITestHarness {
     readonly PlanningPokerFactory _factory = new(redis.Container.GetConnectionString());

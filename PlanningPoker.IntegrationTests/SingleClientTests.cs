@@ -1,9 +1,13 @@
-using PlanningPoker.IntegrationTests.Infrastructure;
 using Xunit;
 
 namespace PlanningPoker.IntegrationTests;
 
-public abstract class SingleClientBehaviorTests(ITestHarness harness) : IAsyncLifetime {
+public class SingleClientTests_InMemory() : SingleClientTests(new InMemorySingleServerHarness());
+
+[Collection("Redis")]
+public class SingleClientTests_Redis(RedisFixture redis) : SingleClientTests(new RedisSingleServerHarness(redis));
+
+public abstract class SingleClientTests(ITestHarness harness) : IAsyncLifetime {
     public Task InitializeAsync() =>
         Task.CompletedTask;
 

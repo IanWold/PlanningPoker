@@ -1,4 +1,4 @@
-namespace PlanningPoker.IntegrationTests.Infrastructure;
+namespace PlanningPoker.IntegrationTests;
 
 /// <summary>
 /// Produces <see cref="TestSessionState"/> clients for a behavior test without the test knowing

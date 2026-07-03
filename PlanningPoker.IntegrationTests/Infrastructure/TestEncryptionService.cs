@@ -1,6 +1,6 @@
 using PlanningPoker.Client;
 
-namespace PlanningPoker.IntegrationTests.Infrastructure;
+namespace PlanningPoker.IntegrationTests;
 
 public class TestEncryptionService : IEncryptionService {
     public Task<string> DecryptAsync(string value) =>

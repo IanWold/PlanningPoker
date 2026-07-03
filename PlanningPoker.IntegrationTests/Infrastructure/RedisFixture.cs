@@ -1,7 +1,7 @@
 using Testcontainers.Redis;
 using Xunit;
 
-namespace PlanningPoker.IntegrationTests.Infrastructure;
+namespace PlanningPoker.IntegrationTests;
 
 public class RedisFixture : IAsyncLifetime {
     public RedisContainer Container { get; } = new RedisBuilder("redis:7.0").Build();

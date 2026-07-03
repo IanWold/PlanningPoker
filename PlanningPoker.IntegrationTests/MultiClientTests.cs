@@ -1,9 +1,16 @@
-using PlanningPoker.IntegrationTests.Infrastructure;
 using Xunit;
 
 namespace PlanningPoker.IntegrationTests;
 
-public abstract class MultiClientBehaviorTests(ITestHarness harness) : IAsyncLifetime {
+public class MultiClientTests_InMemory() : MultiClientTests(new InMemorySingleServerHarness());
+
+[Collection("Redis")]
+public class MultiClientTests_Redis(RedisFixture redis) : MultiClientTests(new RedisSingleServerHarness(redis));
+
+[Collection("Redis")]
+public class MultiClientTests_RedisBackplane(RedisFixture redis) : MultiClientTests(new RedisDualServerHarness(redis));
+
+public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
     public Task InitializeAsync() =>
         Task.CompletedTask;
 

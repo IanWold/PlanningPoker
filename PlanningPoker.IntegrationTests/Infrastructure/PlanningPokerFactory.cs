@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace PlanningPoker.IntegrationTests.Infrastructure;
+namespace PlanningPoker.IntegrationTests;
 
 // Program.cs reads the Redis connection string from configuration and branches before calling Build(),
 // which runs too early for WebApplicationFactory's ConfigureWebHost/ConfigureAppConfiguration overrides -

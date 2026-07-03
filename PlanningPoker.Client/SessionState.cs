@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using TypedSignalR.Client;
@@ -78,7 +74,9 @@ public class SessionState(IEncryptionService encryptionService) : IClient, IHubC
 
     protected virtual Uri GetServerUri() =>
         new($"/sessions/hub?participantId={ParticipantId}");
-        
+
+    protected virtual void ConfigureConnection(HttpConnectionOptions options) { }
+
     protected virtual Task HandleClosedAsync() =>
         Task.CompletedTask;
 
@@ -96,7 +94,7 @@ public class SessionState(IEncryptionService encryptionService) : IClient, IHubC
         }
 
         _connection = new HubConnectionBuilder()
-            .WithUrl(GetServerUri())
+            .WithUrl(GetServerUri(), ConfigureConnection)
             .WithAutomaticReconnect()
             .AddMessagePackProtocol()
             .Build();

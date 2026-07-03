@@ -16,7 +16,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\PlanningPoker.Client\PlanningPoker.Client.csproj" />
+		<ProjectReference Include="..\PlanningPoker.Client.Web\PlanningPoker.Client.Web.csproj" />
 		<ProjectReference Include="..\PlanningPoker\PlanningPoker.csproj" />
 	</ItemGroup>
 

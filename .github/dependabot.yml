@@ -27,7 +27,18 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      blazor-client-project:
+      client-project:
+        patterns:
+          - "*"
+    assignees:
+      - "ianwold"
+
+  - package-ecosystem: "nuget"
+    directory: "/PlanningPoker.Client.Web"
+    schedule:
+      interval: "weekly"
+    groups:
+      web-client-project:
         patterns:
           - "*"
     assignees:

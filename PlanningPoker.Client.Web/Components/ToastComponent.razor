@@ -1,4 +1,4 @@
-﻿@inject SessionState _state
+﻿@inject WebSessionState _state
 
 <div style="position: absolute; top: 84px !important; right: 24px !important;">
     @foreach (var toast in _state.Toasts.Where(t => !t.IsExpired)) {

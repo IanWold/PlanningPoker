@@ -36,3 +36,6 @@ app.MapHub<SessionHub>("/sessions/hub");
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+// Exposes the top-level-statements Program to PlanningPoker.IntegrationTests via WebApplicationFactory<Program>.
+public partial class Program { }

@@ -84,7 +84,7 @@ If you're hoping to contribute, this would be a good first issue to [add documen
 
 # Developing
 
-The client is a Blazor WASM SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.
+The web client is a Blazor WASM SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.
 
 <a href="https://link.excalidraw.com/readonly/NDvp574BNGntF6oGc3Cg?darkMode=true"><img src="https://raw.githubusercontent.com/IanWold/PlanningPoker/main/architecture.png"></a>
 
@@ -112,9 +112,11 @@ All entries associated with a session are removed from Redis when the last parti
 
 ## Client
 
-There's two main files to care about: [SessionState](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client.Web/SessionState.cs) and [SessionPage](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client.Web/Pages/SessionPage.razor). The `SessionState` class keeps the state for the user and their session, and handles commands from the UI and notifications from the server which mutate state. As such, it also maintains the SignalR connection and the navigation in the app (this is trivial, that's just moving from the homepage to the session on creation). When the state mutates, the `OnStateChanged` event is raised.
+The Client is separated into two pieces - a logical client in [PlanningPoker.Client](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client) and the web (Blazor) view in [PlanningPoker.Client.Web](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client.Web). The logical client maintains the SignalR connection with the server, maintanis the state, and exposes all the methods needed to manipulate the state. This is all done though the [SessionState](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client/SessionState.cs) class, which exposes a virtual interface for client implementations. The intent is that different clients can extend `SessionState` with any necessary client-specific logic. When the state mutates, the `OnStateChanged` event is raised.
 
-`SessionState` implements `IClient` and keeps an instance of `IServer`, which fulfil the SignalR communication requirements. These are set up in `EnsureInitialized`, and torn down in `LeaveAsync`. Note that `EnsureInitialized` uses some [fancy source generation](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client.Web/HubConnectionExtensions.cs) - the [package for this](https://github.com/dotnet/aspnetcore/tree/main/src/SignalR/clients/csharp/Client.SourceGenerator/src) _is_ from Microsoft, though it's undocumented and hasn't been updated in two years. If you dig enough online, you'll find [Kristoffer Strube's post](https://kristoffer-strube.dk/post/typed-signalr-clients-making-type-safe-real-time-communication-in-dotnet/) about them. When adding server functionality, this is the only file you need to change unles the functionality you're adding requires new UI components.
+`SessionState` implements `IClient` and keeps an instance of `IServer`, which fulfil the SignalR communication requirements. These are set up in `EnsureInitialized`, and torn down in `LeaveAsync`.  When adding server functionality, this is the only file you need to change unles the functionality you're adding requires new UI components.
+
+On the Blazor client, there's two main files to care about: [WebSessionState](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client.Web/WebSessionState.cs) (which implements the logical client) and [SessionPage](https://github.com/IanWold/PlanningPoker/blob/main/PlanningPoker.Client.Web/Pages/SessionPage.razor).
 
 `SessionPage` is the user interface for almost the entire application. The user will first create a session on the homepage (`Index.razor`) but then all the work in the session is done on this page. This page listens to the `OnStateChanged` event from the state and calls `StateHasChanged` on itself when it receives that event. Several components for the UI are broken out into separate Razor components in [the Components directory](https://github.com/IanWold/PlanningPoker/tree/main/PlanningPoker.Client.Web/Components).
 

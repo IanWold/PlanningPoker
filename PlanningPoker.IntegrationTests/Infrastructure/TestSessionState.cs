@@ -5,7 +5,6 @@ using PlanningPoker.Client;
 namespace PlanningPoker.IntegrationTests.Infrastructure;
 
 public class TestSessionState(Uri serverBaseAddress, Func<HttpMessageHandler> handlerFactory) : SessionState(new TestEncryptionService()) {
-
     protected override Uri GetServerUri() =>
         new(serverBaseAddress, $"sessions/hub?participantId={ParticipantId}");
 

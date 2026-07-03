@@ -23,11 +23,22 @@ updates:
       - "ianwold"
 
   - package-ecosystem: "nuget"
+    directory: "/PlanningPoker.Client"
+    schedule:
+      interval: "weekly"
+    groups:
+      client-project:
+        patterns:
+          - "*"
+    assignees:
+      - "ianwold"
+
+  - package-ecosystem: "nuget"
     directory: "/PlanningPoker.Client.Web"
     schedule:
       interval: "weekly"
     groups:
-      blazor-client-project:
+      web-client-project:
         patterns:
           - "*"
     assignees:

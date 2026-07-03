@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="PlanningPoker.Client.Web/PlanningPoker.Client.Web.csproj" />
+  <Project Path="PlanningPoker.Client/PlanningPoker.Client.csproj" />
   <Project Path="PlanningPoker.Server/PlanningPoker.Server.csproj" />
   <Project Path="PlanningPoker/PlanningPoker.csproj" />
 </Solution>

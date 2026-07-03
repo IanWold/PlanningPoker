@@ -23,7 +23,7 @@ updates:
       - "ianwold"
 
   - package-ecosystem: "nuget"
-    directory: "/PlanningPoker.Client"
+    directory: "/PlanningPoker.Client.Web"
     schedule:
       interval: "weekly"
     groups:

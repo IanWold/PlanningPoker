@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 using TypedSignalR.Client;
 using Timer = System.Timers.Timer;
 
-namespace PlanningPoker.Client;
+namespace PlanningPoker.Client.Web;
 
 public class SessionState(NavigationManager navigationManager, IJSRuntime jsRuntime) : IClient, IHubConnectionObserver, IDisposable {
     public class Toast {

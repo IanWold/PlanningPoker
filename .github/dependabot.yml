@@ -9,7 +9,7 @@ updates:
         patterns:
           - "*"
     assignees:
-      - "ianwold"
+      - "IanWold"
 
   - package-ecosystem: "nuget"
     directory: "/PlanningPoker.Server"
@@ -20,7 +20,7 @@ updates:
         patterns:
           - "*"
     assignees:
-      - "ianwold"
+      - "IanWold"
 
   - package-ecosystem: "nuget"
     directory: "/PlanningPoker.Client"
@@ -31,7 +31,7 @@ updates:
         patterns:
           - "*"
     assignees:
-      - "ianwold"
+      - "IanWold"
 
   - package-ecosystem: "nuget"
     directory: "/PlanningPoker.Client.Web"
@@ -42,4 +42,4 @@ updates:
         patterns:
           - "*"
     assignees:
-      - "ianwold"
+      - "IanWold"

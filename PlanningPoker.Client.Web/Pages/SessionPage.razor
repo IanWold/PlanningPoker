@@ -1,12 +1,12 @@
-﻿@page "/session/{SessionId}"
-@inject WebSessionState _state
-@inject NavigationManager _navigationManager
+@page "/session/{SessionId}"
+@inject SessionStore _store
+@inject Client _client
 
 @using System
 
-<PageTitle>@(_state.Session?.Title ?? "Session")</PageTitle>
+<PageTitle>@(_store.Session?.Title ?? "Session")</PageTitle>
 
-@if (_state.Session is null) {
+@if (_store.Session is null) {
     <div class="spinner-border" style="position: absolute; left: 50%; top: 50%; margin-top:-3rem; margin-left: -3rem; width: 6rem; height: 6rem;" role="status">
         <span class="visually-hidden">Loading...</span>
     </div>
@@ -57,12 +57,12 @@ else {
         <div class="card m-3 shadow-sm border-0" style="grid-area: header; width: 600px;">
             <div class="card-body p-2">
                 <div class="d-flex gap-2 w-100 justify-content-between">
-                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon fw-bold" disabled="@(IsLoading)" @onclick=OnEditTitleClicked>@_state.Session.Title <ion-icon name="settings-sharp"></ion-icon></button>
-                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon" disabled="@(IsLoading)" @onclick=OnEditNameClicked><ion-icon name="person-sharp"></ion-icon> @_state.Self?.Name</button>
+                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon fw-bold" disabled="@(IsLoading)" @onclick=OnEditTitleClicked>@_store.Session.Title <ion-icon name="settings-sharp"></ion-icon></button>
+                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon" disabled="@(IsLoading)" @onclick=OnEditNameClicked><ion-icon name="person-sharp"></ion-icon> @_store.Self?.Name</button>
                 </div>
             </div>
         </div>
-        
+
         <AddComponent />
         <ToggleColorModeComponent />
 
@@ -102,25 +102,25 @@ else {
     bool IsLoading { get; set; }
 
     bool IsContentBlurred =>
-        _state.Self is null
+        _store.Self is null
         || IsEditingTitle
         || IsEditingName;
 
     protected override async Task OnInitializedAsync() {
-        _state.OnStateChanged += (o, e) => StateHasChanged();
-        await _state.LoadAsync(SessionId);
+        _store.Changed += (o, e) => StateHasChanged();
+        await _client.LoadAsync(SessionId);
     }
 
     void OnEditTitleClicked() {
         ErrorMessage = null;
-        Title = _state!.Session!.Title;
+        Title = _store!.Session!.Title;
         IsEditingTitle = true;
         StateHasChanged();
     }
 
     void OnEditNameClicked() {
         ErrorMessage = null;
-        Name = _state.Self!.Name;
+        Name = _store.Self!.Name;
         IsEditingName = true;
         StateHasChanged();
     }
@@ -142,7 +142,7 @@ else {
             StateHasChanged();
 
             try {
-                await _state.UpdateTitleAsync(Title);
+                await _client.UpdateTitleAsync(Title);
             }
             catch {
                 ErrorMessage = "An error occurred while updating the title. Please try again.";
@@ -161,7 +161,7 @@ else {
             StateHasChanged();
 
             try {
-                await _state.UpdateNameAsync(Name);
+                await _client.UpdateNameAsync(Name);
             }
             catch {
                 ErrorMessage = "An error occurred while updating your name. Please try again.";

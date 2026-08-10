@@ -1,3 +1,5 @@
+using PlanningPoker.Client;
+
 namespace PlanningPoker.IntegrationTests;
 
 // Alternates which of the two servers each new client connects to, so a two-client test
@@ -5,14 +7,16 @@ namespace PlanningPoker.IntegrationTests;
 public class RedisDualServerHarness(RedisFixture redis) : ITestHarness {
     readonly PlanningPokerFactory _factoryA = new(redis.Container.GetConnectionString());
     readonly PlanningPokerFactory _factoryB = new(redis.Container.GetConnectionString());
-    readonly List<TestSessionState> _clients = [];
+    readonly List<Client.Client> _clients = [];
     int _next = -1;
 
-    public Task<TestSessionState> CreateClientAsync() {
+    public Task<(Client.Client Client, SessionStore Store, ToastStore Toasts)> CreateClientAsync() {
         var factory = Interlocked.Increment(ref _next) % 2 == 0 ? _factoryA : _factoryB;
-        var client = new TestSessionState(factory.Server.BaseAddress, factory.Server.CreateHandler);
+        var store = new SessionStore();
+        var toasts = new ToastStore();
+        var client = new Client.Client(store, toasts, new TestSessionTransport(factory.Server.BaseAddress, factory.Server.CreateHandler), new TestEncryptionService());
         _clients.Add(client);
-        return Task.FromResult(client);
+        return Task.FromResult((client, store, toasts));
     }
 
     public async ValueTask DisposeAsync() {

@@ -19,164 +19,215 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task JoiningParticipant_IsSeenByExistingParticipant() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, _, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
 
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
     }
 
     [Fact]
     public async Task JoiningParticipant_SeesExistingSessionState() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
 
-        Assert.Equal("Sprint Planning", bob.Session!.Title);
-        Assert.Contains(bob.Session.Participants, p => p.Name == "Alice");
+        Assert.Equal("Sprint Planning", bobStore.Session!.Title);
+        Assert.Contains(bobStore.Session.Participants, p => p.Name == "Alice");
+    }
+
+    [Fact]
+    public async Task JoiningParticipant_ShowsToastToOthersButNotToThemselves() {
+        var (alice, aliceStore, aliceToasts) = await harness.CreateClientAsync();
+        await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+
+        var (bob, bobStore, bobToasts) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
+        await bob.JoinAsync("Bob");
+
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+        await bobStore.WaitForAsync(() => bobStore.Self is not null);
+
+        Assert.Contains(aliceToasts.Toasts, t => t.Message == "Bob has joined!");
+        Assert.DoesNotContain(bobToasts.Toasts, t => t.Message == "Bob has joined!");
     }
 
     [Fact]
     public async Task AddedPoint_PropagatesToOtherParticipant() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
 
         alice.AddPoint("13");
 
-        await bob.WaitForAsync(() => bob.Session!.Points.Contains("13"));
+        await bobStore.WaitForAsync(() => bobStore.Session!.Points.Contains("13"));
+    }
+
+    [Fact]
+    public async Task AddingPoint_ShowsSelfPhrasedToastToActorAndNamePhrasedToastToOthers() {
+        var (alice, aliceStore, aliceToasts) = await harness.CreateClientAsync();
+        await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+
+        var (bob, bobStore, bobToasts) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
+        await bob.JoinAsync("Bob");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+        await bobStore.WaitForAsync(() => bobStore.Self is not null);
+
+        alice.AddPoint("13");
+
+        await aliceStore.WaitForAsync(() => aliceStore.Session!.Points.Contains("13"));
+        await bobStore.WaitForAsync(() => bobStore.Session!.Points.Contains("13"));
+
+        Assert.Contains(aliceToasts.Toasts, t => t.Message == "You added point option \"13\"");
+        Assert.Contains(bobToasts.Toasts, t => t.Message == "Alice added point option \"13\"");
+    }
+
+    [Fact]
+    public async Task RemovedPoint_PropagatesToOtherParticipant() {
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
+        await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
+        await bob.JoinAsync("Bob");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+
+        alice.RemovePoint("2");
+
+        await bobStore.WaitForAsync(() => !bobStore.Session!.Points.Contains("2"));
     }
 
     [Fact]
     public async Task TitleChange_PropagatesToOtherParticipant() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
 
         await alice.UpdateTitleAsync("Sprint 5 Planning");
 
-        await bob.WaitForAsync(() => bob.Session!.Title == "Sprint 5 Planning");
+        await bobStore.WaitForAsync(() => bobStore.Session!.Title == "Sprint 5 Planning");
     }
 
     [Fact]
     public async Task DeselectingPoints_PropagatesToOtherParticipant() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
-        await bob.WaitForAsync(() => bob.Self is not null);
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+        await bobStore.WaitForAsync(() => bobStore.Self is not null);
 
         bob.UpdatePoints("3");
-        await alice.WaitForAsync(() => alice.Others.Single().Points == "3");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Single().Points == "3");
 
         bob.UpdatePoints("3");
 
-        await alice.WaitForAsync(() => alice.Others.Single().Points == "");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Single().Points == "");
     }
 
     [Fact]
     public async Task NameChange_PropagatesToOtherParticipant() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, _, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
 
         await bob.UpdateNameAsync("Bobby");
 
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bobby"));
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bobby"));
     }
 
     [Fact]
     public async Task RevealingState_ShowsOthersSelectedPoints() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
 
         bob.UpdatePoints("3");
-        await alice.WaitForAsync(() => alice.Others.Single().Points == "3");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Single().Points == "3");
 
         alice.UpdateState(State.Revealed);
 
-        await bob.WaitForAsync(() => bob.Session!.State == State.Revealed);
-        await alice.WaitForAsync(() => alice.Session!.State == State.Revealed);
-        Assert.Equal("3", alice.Others.Single().Points);
+        await bobStore.WaitForAsync(() => bobStore.Session!.State == State.Revealed);
+        await aliceStore.WaitForAsync(() => aliceStore.Session!.State == State.Revealed);
+        Assert.Equal("3", aliceStore.Others.Single().Points);
     }
 
     [Fact]
     public async Task HidingState_ClearsSelectedPointsForOthers() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
-        await bob.WaitForAsync(() => bob.Self is not null);
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+        await bobStore.WaitForAsync(() => bobStore.Self is not null);
 
         bob.UpdatePoints("3");
-        await alice.WaitForAsync(() => alice.Others.Single().Points == "3");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Single().Points == "3");
         alice.UpdateState(State.Revealed);
-        await bob.WaitForAsync(() => bob.Session!.State == State.Revealed);
+        await bobStore.WaitForAsync(() => bobStore.Session!.State == State.Revealed);
 
         alice.UpdateState(State.Hidden);
 
-        await alice.WaitForAsync(() => alice.Session!.State == State.Hidden);
-        await bob.WaitForAsync(() => bob.Self!.Points == "");
-        await alice.WaitForAsync(() => alice.Others.Single().Points == "");
+        await aliceStore.WaitForAsync(() => aliceStore.Session!.State == State.Hidden);
+        await bobStore.WaitForAsync(() => bobStore.Self!.Points == "");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Single().Points == "");
     }
 
     [Fact]
     public async Task SendingStar_IncrementsRecipientStarsForBothParticipants() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
-        await bob.WaitForAsync(() => bob.Self is not null);
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+        await bobStore.WaitForAsync(() => bobStore.Self is not null);
 
-        alice.SendStarToParticipant(bob.Self!.ParticipantId);
+        alice.SendStarToParticipant(bobStore.Self!.ParticipantId);
 
-        await bob.WaitForAsync(() => bob.Self!.Stars == 1);
-        await alice.WaitForAsync(() => alice.Others.Single().Stars == 1);
+        await bobStore.WaitForAsync(() => bobStore.Self!.Stars == 1);
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Single().Stars == 1);
     }
 
     [Fact]
     public async Task LeavingParticipant_IsRemovedForOthers() {
-        var alice = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var bob = await harness.CreateClientAsync();
-        await bob.LoadAsync(alice.TestSessionId!);
+        var (bob, _, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
-        await alice.WaitForAsync(() => alice.Others.Any(p => p.Name == "Bob"));
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
 
         await bob.LeaveAsync();
 
-        await alice.WaitForAsync(() => !alice.Others.Any());
+        await aliceStore.WaitForAsync(() => !aliceStore.Others.Any());
     }
 }

@@ -1,7 +1,7 @@
-﻿@inject WebSessionState _state
+﻿@inject ToastStore _store
 
 <div style="position: absolute; top: 84px !important; right: 24px !important;">
-    @foreach (var toast in _state.Toasts.Where(t => !t.IsExpired)) {
+    @foreach (var toast in _store.Toasts.Where(t => !t.IsExpired)) {
         <div class="toast align-items-center text-bg-info border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body">
@@ -15,5 +15,5 @@
 
 @code {
     protected override void OnInitialized() =>
-        _state.OnStateChanged += (o, e) => StateHasChanged();
+        _store.Changed += (o, e) => StateHasChanged();
 }

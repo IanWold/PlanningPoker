@@ -1,6 +1,7 @@
-﻿@inject WebSessionState _state
+@inject SessionStore _store
+@inject Client _client
 
-@if (_state.Self is null) {
+@if (_store.Self is null) {
     <div class="overlay">
         <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
             <form class="d-flex gap-2 w-100" @onsubmit=OnJoinClicked>
@@ -23,9 +24,9 @@
     string? ErrorMessage { get; set; }
 
     bool IsLoading { get; set; }
-    
+
     protected override void OnInitialized() =>
-        _state.OnStateChanged += (o, e) => StateHasChanged();
+        _store.Changed += (o, e) => StateHasChanged();
 
     async Task OnJoinClicked() {
         if (!string.IsNullOrWhiteSpace(Name)) {
@@ -34,12 +35,12 @@
             StateHasChanged();
 
             try {
-                await _state.JoinAsync(Name);
+                await _client.JoinAsync(Name);
             }
             catch {
                 ErrorMessage = "An error occurred while joining the session. Please try again.";
             }
-            
+
             IsLoading = false;
             StateHasChanged();
         }

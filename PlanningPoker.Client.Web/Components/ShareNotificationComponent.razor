@@ -1,6 +1,7 @@
-﻿@inject WebSessionState _state
+﻿@inject SessionStore _store
+@inject Client _client
 
-@if (_state.ShowShareNotification)
+@if (_store.ShowShareNotification)
 {
     <div style="position: absolute; left: 142px; top: 0; z-index: 0; display: flex;">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 474.3779255537628 132.10090279767292" width="474.3779255537628" height="132.10090279767292">
@@ -38,12 +39,12 @@
             <mask></mask>
         </svg>
         <div>
-            <button class="btn-close" style="margin-top: 98px;" @onclick=_state.HideShareNotification></button>
+            <button class="btn-close" style="margin-top: 98px;" @onclick=_client.HideShareNotification></button>
         </div>
     </div>
 }
 
 @code {
     protected override void OnInitialized() =>
-        _state.OnStateChanged += (o, e) => StateHasChanged();
+        _store.Changed += (o, e) => StateHasChanged();
 }

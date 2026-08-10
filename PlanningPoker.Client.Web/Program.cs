@@ -12,6 +12,9 @@ builder.Services.AddScoped(_ => new HttpClient {
 });
 
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
-builder.Services.AddSingleton<WebSessionState>();
+builder.Services.AddSingleton<ISessionTransport, WebSessionTransport>();
+builder.Services.AddSingleton<SessionStore>();
+builder.Services.AddSingleton<ToastStore>();
+builder.Services.AddSingleton<Client>();
 
 await builder.Build().RunAsync();

@@ -1,48 +1,49 @@
-﻿@inject WebSessionState _state
+@inject SessionStore _store
+@inject Client _client
 
-<div class="circle bg-secondary-subtle" style="--total: @(_state!.Session!.Participants.Count()); --radius: @(System.Math.Max(_state.Session.Participants.Count() * 25, 125))px;">
-    @if (_state.Session.State == State.Hidden) {
-        <button class="btn btn-outline-primary border-0" @onclick="@(() => _state.UpdateState(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
+<div class="circle bg-secondary-subtle" style="--total: @(_store!.Session!.Participants.Count()); --radius: @(System.Math.Max(_store.Session.Participants.Count() * 25, 125))px;">
+    @if (_store.Session.State == State.Hidden) {
+        <button class="btn btn-outline-primary border-0" @onclick="@(() => _client.UpdateState(State.Revealed))"><ion-icon name="eye-outline"></ion-icon></button>
     }
     else {
-        <button class="btn btn-outline-primary border-0" @onclick="@(() => _state.UpdateState(State.Hidden))"><ion-icon name="sync"></ion-icon></button>
+        <button class="btn btn-outline-primary border-0" @onclick="@(() => _client.UpdateState(State.Hidden))"><ion-icon name="sync"></ion-icon></button>
     }
 
-    @for (int i = 0; i < _state.Others.Count(); i++) {
-        var participantId = _state.Others.ElementAt(i).ParticipantId;
+    @for (int i = 0; i < _store.Others.Count(); i++) {
+        var participantId = _store.Others.ElementAt(i).ParticipantId;
 
         <div class="stat" id="@(participantId)" style="--i:@(i + 1)">
             <label>
-                @(_state.Others.ElementAt(i).Name)
-                @if (_state.Others.ElementAt(i).Stars > 0) {
-                    <span>⭐ @(_state.Others.ElementAt(i).Stars)</span>
+                @(_store.Others.ElementAt(i).Name)
+                @if (_store.Others.ElementAt(i).Stars > 0) {
+                    <span>⭐ @(_store.Others.ElementAt(i).Stars)</span>
                 }
             </label>
 
-            <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Others.ElementAt(i).Points)) {
-                    <span>@_state.Others.ElementAt(i).Points</span>
+            <div class="point shadow @(string.IsNullOrWhiteSpace(_store.Others.ElementAt(i).Points) ? "bg-primary-subtle" : "bg-primary") text-white">
+                @if (_store.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_store.Others.ElementAt(i).Points)) {
+                    <span>@_store.Others.ElementAt(i).Points</span>
                 }
             </div>
 
             <div class="btn-option btn-like">
-                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => _state.SendStarToParticipant(participantId))"><ion-icon name="star-sharp"></ion-icon></button>
+                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => _client.SendStarToParticipant(participantId))"><ion-icon name="star-sharp"></ion-icon></button>
             </div>
         </div>
     }
-    
-    @if (_state.Self is not null) {
-        <div class="stat" style="--i:@(_state.Session.Participants.Count())" id="@(_state.Self.ParticipantId)">
+
+    @if (_store.Self is not null) {
+        <div class="stat" style="--i:@(_store.Session.Participants.Count())" id="@(_store.Self.ParticipantId)">
             <label>
-                @(_state.Self.Name)
-                @if (_state.Self.Stars > 0) {
-                    <span>⭐ @(_state.Self.Stars)</span>
+                @(_store.Self.Name)
+                @if (_store.Self.Stars > 0) {
+                    <span>⭐ @(_store.Self.Stars)</span>
                 }
             </label>
 
-            <div class="point shadow @(string.IsNullOrWhiteSpace(_state.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
-                @if (_state.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_state.Self.Points)) {
-                    <span>@_state.Self.Points</span>
+            <div class="point shadow @(string.IsNullOrWhiteSpace(_store.Self.Points) ? "bg-primary-subtle" : "bg-primary") text-white">
+                @if (_store.Session.State != State.Hidden && !string.IsNullOrWhiteSpace(_store.Self.Points)) {
+                    <span>@_store.Self.Points</span>
                 }
             </div>
         </div>
@@ -51,5 +52,5 @@
 
 @code {
     protected override void OnInitialized() =>
-        _state.OnStateChanged += (o, e) => StateHasChanged();
+        _store.Changed += (o, e) => StateHasChanged();
 }

@@ -1,13 +1,16 @@
+using PlanningPoker.Client;
+
 namespace PlanningPoker.IntegrationTests;
 
 public class RedisSingleServerHarness(RedisFixture redis) : ITestHarness {
     readonly PlanningPokerFactory _factory = new(redis.Container.GetConnectionString());
-    readonly List<TestSessionState> _clients = [];
+    readonly List<Client.Client> _clients = [];
 
-    public Task<TestSessionState> CreateClientAsync() {
-        var client = new TestSessionState(_factory.Server.BaseAddress, _factory.Server.CreateHandler);
+    public Task<(Client.Client Client, SessionStore Store)> CreateClientAsync() {
+        var store = new SessionStore();
+        var client = new Client.Client(store, new ToastStore(), new TestSessionTransport(_factory.Server.BaseAddress, _factory.Server.CreateHandler), new TestEncryptionService());
         _clients.Add(client);
-        return Task.FromResult(client);
+        return Task.FromResult((client, store));
     }
 
     public async ValueTask DisposeAsync() {

@@ -16,7 +16,7 @@ public abstract class SingleClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task CreateAsync_EstablishesInitialSessionState() {
-        var (client, store) = await harness.CreateClientAsync();
+        var (client, store, _) = await harness.CreateClientAsync();
 
         await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3", "5", "8"]);
         await store.WaitForAsync(() => store.Self is not null);
@@ -28,8 +28,30 @@ public abstract class SingleClientTests(ITestHarness harness) : IAsyncLifetime {
     }
 
     [Fact]
+    public async Task CreateAsync_SetsSessionUrl() {
+        var (client, store, _) = await harness.CreateClientAsync();
+
+        await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+
+        Assert.Equal($"https://freeplanningpoker.io/session/{store.SessionId}#key=test-key", store.SessionUrl);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShowsShareNotificationUntilHidden() {
+        var (client, store, _) = await harness.CreateClientAsync();
+
+        await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+
+        Assert.True(store.ShowShareNotification);
+
+        client.HideShareNotification();
+
+        Assert.False(store.ShowShareNotification);
+    }
+
+    [Fact]
     public async Task UpdatePoints_SetsSelfPoints() {
-        var (client, store) = await harness.CreateClientAsync();
+        var (client, store, _) = await harness.CreateClientAsync();
         await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
         await store.WaitForAsync(() => store.Self is not null);
 
@@ -40,7 +62,7 @@ public abstract class SingleClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task UpdatePoints_TogglesOffWhenReselectingTheSameOption() {
-        var (client, store) = await harness.CreateClientAsync();
+        var (client, store, _) = await harness.CreateClientAsync();
         await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
         await store.WaitForAsync(() => store.Self is not null);
         client.UpdatePoints("2");
@@ -53,7 +75,7 @@ public abstract class SingleClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task AddPoint_AddsNewPointOption() {
-        var (client, store) = await harness.CreateClientAsync();
+        var (client, store, _) = await harness.CreateClientAsync();
         await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
         client.AddPoint("13");
@@ -63,7 +85,7 @@ public abstract class SingleClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task RemovePoint_RemovesExistingPointOption() {
-        var (client, store) = await harness.CreateClientAsync();
+        var (client, store, _) = await harness.CreateClientAsync();
         await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
         client.RemovePoint("2");
@@ -73,7 +95,7 @@ public abstract class SingleClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task UpdateTitleAsync_SetsOwnTitle() {
-        var (client, store) = await harness.CreateClientAsync();
+        var (client, store, _) = await harness.CreateClientAsync();
         await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
         await client.UpdateTitleAsync("Sprint 5 Planning");
@@ -83,12 +105,39 @@ public abstract class SingleClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task UpdateNameAsync_SetsOwnName() {
-        var (client, store) = await harness.CreateClientAsync();
+        var (client, store, _) = await harness.CreateClientAsync();
         await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
         await store.WaitForAsync(() => store.Self is not null);
 
         await client.UpdateNameAsync("Alicia");
 
         Assert.Equal("Alicia", store.Self!.Name);
+    }
+
+    [Fact]
+    public async Task LeaveAsync_ClearsOwnSessionState() {
+        var (client, store, _) = await harness.CreateClientAsync();
+        await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+        await store.WaitForAsync(() => store.Self is not null);
+
+        await client.LeaveAsync();
+
+        Assert.Null(store.SessionId);
+        Assert.Null(store.Session);
+    }
+
+    [Fact]
+    public async Task LoadAsync_SwitchesFromAnAlreadyLoadedSessionToAnother() {
+        var (client, store, _) = await harness.CreateClientAsync();
+        await client.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+        await store.WaitForAsync(() => store.Self is not null);
+
+        var (otherClient, otherStore, _) = await harness.CreateClientAsync();
+        await otherClient.CreateAsync("Sprint 2 Planning", "Bob", (string[])["1", "2", "3"]);
+        await otherStore.WaitForAsync(() => otherStore.Self is not null);
+
+        await client.LoadAsync(otherStore.SessionId!);
+
+        Assert.Equal("Sprint 2 Planning", store.Session!.Title);
     }
 }

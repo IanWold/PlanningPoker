@@ -99,6 +99,7 @@ public class Client(SessionStore sessionStore, ToastStore toastStore, ISessionTr
 
         if (sessionStore.SessionId is not null) {
             await LeaveAsync();
+            await EnsureInitialized();
         }
 
         var encryptionKey = await encryptionService.GetKeyAsync();

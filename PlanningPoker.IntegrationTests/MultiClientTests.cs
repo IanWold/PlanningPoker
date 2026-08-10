@@ -19,10 +19,10 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task JoiningParticipant_IsSeenByExistingParticipant() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, _) = await harness.CreateClientAsync();
+        var (bob, _, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
 
@@ -31,10 +31,10 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task JoiningParticipant_SeesExistingSessionState() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, bobStore) = await harness.CreateClientAsync();
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
 
         Assert.Equal("Sprint Planning", bobStore.Session!.Title);
@@ -42,11 +42,27 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
     }
 
     [Fact]
-    public async Task AddedPoint_PropagatesToOtherParticipant() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+    public async Task JoiningParticipant_ShowsToastToOthersButNotToThemselves() {
+        var (alice, aliceStore, aliceToasts) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, bobStore) = await harness.CreateClientAsync();
+        var (bob, bobStore, bobToasts) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
+        await bob.JoinAsync("Bob");
+
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+        await bobStore.WaitForAsync(() => bobStore.Self is not null);
+
+        Assert.Contains(aliceToasts.Toasts, t => t.Message == "Bob has joined!");
+        Assert.DoesNotContain(bobToasts.Toasts, t => t.Message == "Bob has joined!");
+    }
+
+    [Fact]
+    public async Task AddedPoint_PropagatesToOtherParticipant() {
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
+        await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
@@ -57,11 +73,46 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
     }
 
     [Fact]
-    public async Task TitleChange_PropagatesToOtherParticipant() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+    public async Task AddingPoint_ShowsSelfPhrasedToastToActorAndNamePhrasedToastToOthers() {
+        var (alice, aliceStore, aliceToasts) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, bobStore) = await harness.CreateClientAsync();
+        var (bob, bobStore, bobToasts) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
+        await bob.JoinAsync("Bob");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+        await bobStore.WaitForAsync(() => bobStore.Self is not null);
+
+        alice.AddPoint("13");
+
+        await aliceStore.WaitForAsync(() => aliceStore.Session!.Points.Contains("13"));
+        await bobStore.WaitForAsync(() => bobStore.Session!.Points.Contains("13"));
+
+        Assert.Contains(aliceToasts.Toasts, t => t.Message == "You added point option \"13\"");
+        Assert.Contains(bobToasts.Toasts, t => t.Message == "Alice added point option \"13\"");
+    }
+
+    [Fact]
+    public async Task RemovedPoint_PropagatesToOtherParticipant() {
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
+        await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
+        await bob.LoadAsync(aliceStore.SessionId!);
+        await bob.JoinAsync("Bob");
+        await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
+
+        alice.RemovePoint("2");
+
+        await bobStore.WaitForAsync(() => !bobStore.Session!.Points.Contains("2"));
+    }
+
+    [Fact]
+    public async Task TitleChange_PropagatesToOtherParticipant() {
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
+        await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
+
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
@@ -73,10 +124,10 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task DeselectingPoints_PropagatesToOtherParticipant() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, bobStore) = await harness.CreateClientAsync();
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
@@ -92,10 +143,10 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task NameChange_PropagatesToOtherParticipant() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, _) = await harness.CreateClientAsync();
+        var (bob, _, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
@@ -107,10 +158,10 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task RevealingState_ShowsOthersSelectedPoints() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, bobStore) = await harness.CreateClientAsync();
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
@@ -127,10 +178,10 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task HidingState_ClearsSelectedPointsForOthers() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, bobStore) = await harness.CreateClientAsync();
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
@@ -150,10 +201,10 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task SendingStar_IncrementsRecipientStarsForBothParticipants() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, bobStore) = await harness.CreateClientAsync();
+        var (bob, bobStore, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
@@ -167,10 +218,10 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
     [Fact]
     public async Task LeavingParticipant_IsRemovedForOthers() {
-        var (alice, aliceStore) = await harness.CreateClientAsync();
+        var (alice, aliceStore, _) = await harness.CreateClientAsync();
         await alice.CreateAsync("Sprint Planning", "Alice", (string[])["1", "2", "3"]);
 
-        var (bob, _) = await harness.CreateClientAsync();
+        var (bob, _, _) = await harness.CreateClientAsync();
         await bob.LoadAsync(aliceStore.SessionId!);
         await bob.JoinAsync("Bob");
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));

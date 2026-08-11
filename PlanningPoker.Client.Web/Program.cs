@@ -11,10 +11,6 @@ builder.Services.AddScoped(_ => new HttpClient {
     BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
 });
 
-builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
-builder.Services.AddSingleton<ISessionTransport, WebSessionTransport>();
-builder.Services.AddSingleton<SessionStore>();
-builder.Services.AddSingleton<ToastStore>();
-builder.Services.AddSingleton<Client>();
+builder.Services.AddClient<EncryptionService, WebSessionTransport>();
 
 await builder.Build().RunAsync();

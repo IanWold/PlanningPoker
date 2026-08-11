@@ -2,8 +2,18 @@ using PlanningPoker.Client;
 
 namespace PlanningPoker.IntegrationTests;
 
-public static class SessionStoreTestExtensions {
-    public static async Task WaitForAsync(this SessionStore store, Func<bool> condition, TimeSpan? timeout = null) {
+public static class Extensions {
+    extension(SessionStore store) {
+        public Task WaitForAsync(Func<bool> condition, TimeSpan? timeout = null) =>
+            WaitForChangedAsync(h => store.Changed += h, h => store.Changed -= h, condition, timeout);
+    }
+
+    extension(ToastStore store) {
+        public Task WaitForAsync(Func<bool> condition, TimeSpan? timeout = null) =>
+            WaitForChangedAsync(h => store.Changed += h, h => store.Changed -= h, condition, timeout);
+    }
+
+    private static async Task WaitForChangedAsync(Action<EventHandler> subscribe, Action<EventHandler> unsubscribe, Func<bool> condition, TimeSpan? timeout) {
         var completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         void OnChanged(object? sender, EventArgs e) {
@@ -12,7 +22,7 @@ public static class SessionStoreTestExtensions {
             }
         }
 
-        store.Changed += OnChanged;
+        subscribe(OnChanged);
 
         try {
             if (condition()) {
@@ -27,7 +37,7 @@ public static class SessionStoreTestExtensions {
             await completionSource.Task;
         }
         finally {
-            store.Changed -= OnChanged;
+            unsubscribe(OnChanged);
         }
     }
 }

@@ -52,6 +52,7 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
         await aliceStore.WaitForAsync(() => aliceStore.Others.Any(p => p.Name == "Bob"));
         await bobStore.WaitForAsync(() => bobStore.Self is not null);
+        await aliceToasts.WaitForAsync(() => aliceToasts.Toasts.Any(t => t.Message == "Bob has joined!"));
 
         Assert.Contains(aliceToasts.Toasts, t => t.Message == "Bob has joined!");
         Assert.DoesNotContain(bobToasts.Toasts, t => t.Message == "Bob has joined!");
@@ -87,6 +88,8 @@ public abstract class MultiClientTests(ITestHarness harness) : IAsyncLifetime {
 
         await aliceStore.WaitForAsync(() => aliceStore.Session!.Points.Contains("13"));
         await bobStore.WaitForAsync(() => bobStore.Session!.Points.Contains("13"));
+        await aliceToasts.WaitForAsync(() => aliceToasts.Toasts.Any(t => t.Message == "You added point option \"13\""));
+        await bobToasts.WaitForAsync(() => bobToasts.Toasts.Any(t => t.Message == "Alice added point option \"13\""));
 
         Assert.Contains(aliceToasts.Toasts, t => t.Message == "You added point option \"13\"");
         Assert.Contains(bobToasts.Toasts, t => t.Message == "Alice added point option \"13\"");

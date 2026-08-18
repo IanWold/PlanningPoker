@@ -6,15 +6,13 @@
 
 <a href="https://freeplanningpoker.io"><img alt="Website" src="https://img.shields.io/website?url=https%3A%2F%2Ffreeplanningpoker.io&style=for-the-badge"></a>
 <a href="https://hub.docker.com/r/ianwold/free-planning-poker"><img alt="Docker Image Version" src="https://img.shields.io/docker/v/ianwold/free-planning-poker?style=for-the-badge&label=dockerhub"></a>
-<a href="https://github.com/IanWold/PlanningPoker/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22"><img alt="GitHub Issues or Pull Requests by label" src="https://img.shields.io/github/issues-search?query=repo%3Aianwold%2Fplanningpoker%20is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22&style=for-the-badge&label=Good%20First%20Issues&color=yellow"></a>
 
 Fast and easy planning poker sessions for your whole team: free, secure, and open-source!
 
 Always Free ♣ Unlimited Sessions ♠ Unlimited Participants
 
 [FreePlanningPoker.io](https://freeplanningpoker.io) •
-[Deploy Yourself](#deploying) •
-[Contribute](#contributing)
+[Deploy Yourself](#deploying)
 
 </div>
 

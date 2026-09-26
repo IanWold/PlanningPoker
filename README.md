@@ -85,7 +85,11 @@ If you're hoping to contribute, this would be a good first issue to [add documen
 
 The web client is a Blazor WASM SPA, the server is ASP and they communicate exclusively over SignalR (websockets). The server uses Redis as a backplane for SignalR and to store active sessions - this allows the server to scale horizontally.
 
+<div align="center">
+
 ![architecture](https://raw.githubusercontent.com/IanWold/PlanningPoker/main/architecture.svg)
+
+</div>
 
 ## Server
 

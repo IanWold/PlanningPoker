@@ -51,35 +51,69 @@ FreePlanningPoker comes with a standalone [Dockerfile](https://github.com/IanWol
 
 # Deploying
 
-You can deploy this project yourself without much fuss. I recommend using [Railway](https://railway.app/), my favorite cloud provider for simple apps (heck, even some complicated scenarios are probably fine here).
+FreePlanningPoker is published as a Docker image on [Docker Hub](https://hub.docker.com/r/ianwold/free-planning-poker). The container serves both the web client and the server on port `8080`.
 
-In future I want to add some documentation around deploying on Docker, and since this is a .NET app I could include Azure Services documentation easily.
+> [!NOTE]
+> End-to-end encryption relies on the browser's Web Crypto API, which is only available over HTTPS (or on `localhost`). Further, client<->server communication uses WebSockets. Ensure your network configurations support these.
 
-## Via Railway
+## Deploying the Image
 
-_(See also my guide on [deploying ASP and Blazor apps on Railway](https://ian.wold.guru/Posts/deploying_aspdotnet_7_projects_with_railway.html))_
+```bash
+docker run -d -p 8080:8080 --name free-planning-poker ianwold/free-planning-poker:latest
+```
 
-1. [Fork](https://github.com/IanWold/PlanningPoker/fork) and clone this repo
-2. Create an account at [Railway](https://railway.app)
-3. Create a [new project](https://docs.railway.app/guides/projects), and [add a Redis instance](https://docs.railway.app/guides/redis) to it
-4. Add a [new service](https://docs.railway.app/guides/services) from your cloned GitHub repo (Railway will handle building and all)
-5. Add your Redis connection string as an environment variable: `ConnectionStrings__Redis` (Use Railway's [reference variables](https://docs.railway.app/guides/variables#reference-variables) to make this easy)
+Then open [http://localhost:8080](http://localhost:8080).
 
-Now you should be good to go! Railway can [provide a domain name](https://docs.railway.app/guides/public-networking#railway-provided-domain) for your instance of FreePlanningPoker so you can use it.
+Without any further configuration the app uses its in-memory store. That's fine for trying it out or for a small team on a single instance, but the in-memory store is _not_ thread safe and it can't be shared between instances. All sessions are also lost whenever the container restarts. For anything more serious, run it with Redis.
 
-Note that while you technically can deploy this without Redis, I don't recommend it since the in-memory store is not thread safe. If you want to make it thread safe I'd be more than happy to entertain that PR!
+## Deploying with Redis
 
-In future I'll be adding some of these settings to a Railway config file in the repo, eliminating the need for a couple of these steps.
+If you give the app a Redis connection string through the `ConnectionStrings__Redis` environment variable, it will use Redis to store sessions and as a SignalR backplane. This makes the app thread safe and lets you run several instances behind a load balancer.
 
-## Via Docker
+If you already have a Redis instance:
 
-FreePlanningPoker comes with a standalone [Dockerfile](https://github.com/IanWold/PlanningPoker/blob/main/Dockerfile) that you can use to deploy to any containerized environment.
+```bash
+docker run -d -p 8080:8080 \
+  -e ConnectionStrings__Redis="<your-connection-string>" \
+  --name free-planning-poker \
+  ianwold/free-planning-poker:latest
+```
 
-## Via Azure
+Otherwise, you can run both together with Docker Compose. As an example, this is a minimal `compose.yaml`:
 
-_This section TBD_.
+```yaml
+services:
+  app:
+    image: ianwold/free-planning-poker:latest
+    ports:
+      - "8080:8080"
+    environment:
+      ConnectionStrings__Redis: redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
 
-If you're hoping to contribute, this would be a good first issue to [add documentation for this](https://github.com/IanWold/PlanningPoker/issues/26)! Realistically, if you have an Azure subscription you should be able to click the Publish button in Visual Studio and send it up in a new App Service.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+```
+
+Then start it with:
+
+```bash
+docker compose up -d
+```
+
+The connection string follows the [StackExchange.Redis configuration format](https://stackexchange.github.io/StackExchange.Redis/Configuration.html), so you can add options like a password or TLS as needed (e.g. `my-redis:6380,password=secret,ssl=true`). Session data doesn't need to survive a Redis restart: every key has a 24-hour TTL, so you don't need to set up Redis persistence.
+
+## Building the Image Yourself
+
+If you've made changes of your own, you can build the image from the [Dockerfile](https://github.com/IanWold/PlanningPoker/blob/main/Dockerfile) at the root of the repo:
+
+```bash
+docker build -t free-planning-poker .
+docker run -d -p 8080:8080 free-planning-poker
+```
 
 # Developing
 

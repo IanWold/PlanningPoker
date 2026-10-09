@@ -106,6 +106,13 @@ docker compose up -d
 
 The connection string follows the [StackExchange.Redis configuration format](https://stackexchange.github.io/StackExchange.Redis/Configuration.html), so you can add options like a password or TLS as needed (e.g. `my-redis:6380,password=secret,ssl=true`). Session data doesn't need to survive a Redis restart: every key has a 24-hour TTL, so you don't need to set up Redis persistence.
 
+## Health Checks
+
+The server exposes two endpoints for your load balancer, orchestrator, or uptime monitor:
+
+* `/health/live` returns `200` whenever the server process is up and serving requests. It doesn't check Redis, so it's the one to use for restarting a stuck container.
+* `/health/ready` returns `200` when the server can reach Redis (it sends a `PING` with a 3-second timeout), and `503` otherwise. With the in-memory store it always returns `200`. Use this one for routing traffic and for alerting.
+
 ## Building the Image Yourself
 
 If you've made changes of your own, you can build the image from the [Dockerfile](https://github.com/IanWold/PlanningPoker/blob/main/Dockerfile) at the root of the repo:

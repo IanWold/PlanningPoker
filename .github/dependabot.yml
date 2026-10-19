@@ -43,3 +43,14 @@ updates:
           - "*"
     assignees:
       - "IanWold"
+
+  - package-ecosystem: "nuget"
+    directory: "/PlanningPoker.IntegrationTests"
+    schedule:
+      interval: "weekly"
+    groups:
+      integration-tests-project:
+        patterns:
+          - "*"
+    assignees:
+      - "IanWold"

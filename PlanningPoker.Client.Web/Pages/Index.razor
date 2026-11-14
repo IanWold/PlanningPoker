@@ -22,33 +22,33 @@
             <form @onsubmit=OnStartPlanningClicked>
                 <div class="d-flex gap-2">
                     <div class="flex-fill">
-                        <input type="text" class="form-control" placeholder="Session Title" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Title>
+                        <input type="text" class="form-control" placeholder="Session Title" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsSubmitting)" @bind-value=Title>
                     </div>
                     <div class="flex-fill">
-                        <input type="text" class="form-control" placeholder="Your Name" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Name>
+                        <input type="text" class="form-control" placeholder="Your Name" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsSubmitting)" @bind-value=Name>
                     </div>
                 </div>
 
                 <div class="form-control px-2 d-flex mt-2">
-                    <input type="radio" class="btn-check" name="options-outlined" id="check-fibonacci" autocomplete="off" disabled="@(IsLoading)" checked @onchange="@(() => PointValueTemplate = "fibonacci")">
+                    <input type="radio" class="btn-check" name="options-outlined" id="check-fibonacci" autocomplete="off" disabled="@(IsSubmitting)" checked @onchange="@(() => PointValueTemplate = "fibonacci")">
                     <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-fibonacci">🐚 Fibonacci</label>
 
-                    <input type="radio" class="btn-check" name="options-outlined" id="check-powers" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "powers")">
+                    <input type="radio" class="btn-check" name="options-outlined" id="check-powers" autocomplete="off" disabled="@(IsSubmitting)"  @onchange="@(() => PointValueTemplate = "powers")">
                     <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-powers">⚡ Powers of 2</label>
 
-                    <input type="radio" class="btn-check" name="options-outlined" id="check-tshirt" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "tshirt")">
+                    <input type="radio" class="btn-check" name="options-outlined" id="check-tshirt" autocomplete="off" disabled="@(IsSubmitting)"  @onchange="@(() => PointValueTemplate = "tshirt")">
                     <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-tshirt">👕 T-Shirt Sizes</label>
 
-                    <input type="radio" class="btn-check" name="options-outlined" id="check-west" autocomplete="off" disabled="@(IsLoading)"  @onchange="@(() => PointValueTemplate = "west")">
+                    <input type="radio" class="btn-check" name="options-outlined" id="check-west" autocomplete="off" disabled="@(IsSubmitting)"  @onchange="@(() => PointValueTemplate = "west")">
                     <label class="btn btn-outline-secondary border-0 px-0" style="flex-basis: 0; flex-grow: 1;" for="check-west">🏜️ Wild West</label>
                 </div>
 
-                <button class="btn btn-primary mt-2 w-100" type="submit" disabled="@(IsLoading)">Start Planning</button>
+                <button class="btn btn-primary mt-2 w-100" type="submit" disabled="@(IsSubmitting)">Start Planning</button>
             </form>
 
-            @if (!string.IsNullOrEmpty(ErrorMessage)) {
+            @if (Status is FormStatus.Failed(var errorMessage)) {
                 <div class="alert alert-danger mb-0 mt-3">
-                    <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
+                    <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @errorMessage
                 </div>
             }
         </div>
@@ -88,17 +88,15 @@
 
     string Name { get; set; } = string.Empty;
 
-    string? ErrorMessage { get; set; }
+    FormStatus Status { get; set; } = new FormStatus.Idle();
 
-    bool IsLoading { get; set; }
+    bool IsSubmitting => Status is FormStatus.Submitting;
 
     string PointValueTemplate { get; set; } = "fibonacci";
 
     async Task OnStartPlanningClicked() {
         if (!string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Name)) {
-            IsLoading = true;
-            ErrorMessage = null;
-            StateHasChanged();
+            Status = new FormStatus.Submitting();
 
             string[] pointValues = PointValueTemplate switch {
                 "powers" => [ "0", "1", "2", "4", "8", "16", "32", "∞", "?" ],
@@ -109,13 +107,11 @@
 
             try {
                 await _client.CreateAsync(Title, Name, pointValues);
+                Status = new FormStatus.Idle();
             }
             catch {
-                ErrorMessage = "An error occurred while creating your session. Please try again.";
+                Status = new FormStatus.Failed("An error occurred while creating your session. Please try again.");
             }
-
-            IsLoading = false;
-            StateHasChanged();
         }
     }
 }

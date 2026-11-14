@@ -37,10 +37,6 @@ builder.Services.AddSingleton<IUserIdProvider, SessionHub.UserIdProvider>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) {
-    app.UseWebAssemblyDebugging();
-}
-
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 app.UseRouting();

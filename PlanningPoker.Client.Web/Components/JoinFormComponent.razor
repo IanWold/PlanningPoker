@@ -5,13 +5,13 @@
     <div class="overlay">
         <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
             <form class="d-flex gap-2 w-100" @onsubmit=OnJoinClicked>
-                <input type="text" class="form-control" placeholder="Enter your name to join the session" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsLoading)" @bind-value=Name>
-                <button class="btn btn-primary" type="submit" disabled="@(IsLoading)">Join</button>
+                <input type="text" class="form-control" placeholder="Enter your name to join the session" required pattern="(.|\s)*\S(.|\s)*" disabled="@(IsSubmitting)" @bind-value=Name>
+                <button class="btn btn-primary" type="submit" disabled="@(IsSubmitting)">Join</button>
             </form>
 
-            @if (!string.IsNullOrEmpty(ErrorMessage)) {
+            @if (Status is FormStatus.Failed(var errorMessage)) {
                 <div class="alert alert-danger mb-0 mt-3">
-                    <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
+                    <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @errorMessage
                 </div>
             }
         </div> </div> </div> </div>
@@ -21,28 +21,24 @@
 @code {
     string Name { get; set; } = string.Empty;
 
-    string? ErrorMessage { get; set; }
+    FormStatus Status { get; set; } = new FormStatus.Idle();
 
-    bool IsLoading { get; set; }
+    bool IsSubmitting => Status is FormStatus.Submitting;
 
     protected override void OnInitialized() =>
         _store.Changed += (o, e) => StateHasChanged();
 
     async Task OnJoinClicked() {
         if (!string.IsNullOrWhiteSpace(Name)) {
-            ErrorMessage = null;
-            IsLoading = true;
-            StateHasChanged();
+            Status = new FormStatus.Submitting();
 
             try {
                 await _client.JoinAsync(Name);
+                Status = new FormStatus.Idle();
             }
             catch {
-                ErrorMessage = "An error occurred while joining the session. Please try again.";
+                Status = new FormStatus.Failed("An error occurred while joining the session. Please try again.");
             }
-
-            IsLoading = false;
-            StateHasChanged();
         }
     }
 }

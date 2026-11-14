@@ -25,7 +25,7 @@ This is Free Planning Poker, a free tool for software teams to do "planning poke
 The ideal scenario is that you can "clone and go" without much (if any) work, but there's a couple steps you need right now:
 
 1. [Fork](https://github.com/IanWold/PlanningPoker/fork) and clone this repo
-2. Download and install the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+2. Download and install the [.NET 11 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/11.0)
 3. I recommend using VSCode with the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit&WT.mc_id=dotnet-35129-website)
 
 You should be good to go now - hit F5 and watch it run! By default it will use an in-memory store to keep state. This store is _not_ thread safe; in order to get thread safety (and to allow SignalR to use a backplane) you'll need to provide a connection string for Redis. However, the in-memory store is fast and ideal for local debugging scenarios.

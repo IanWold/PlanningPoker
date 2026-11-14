@@ -15,36 +15,36 @@ else {
     <ToastComponent />
     <JoinFormComponent />
 
-    @if (IsEditingTitle) {
+    @if (Modal is EditModal.EditingTitle(var titleStatus)) {
         <div class="overlay">
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <form class="d-flex gap-2 w-100" @onsubmit=OnSaveTitleClicked>
                     <input type="text" class="form-control" placeholder="Enter a title for the session" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Title>
-                    <button class="btn border-0 btn-outline-success" type="submit" disabled="@(IsLoading)"><ion-icon name="checkmark-sharp"></ion-icon></button>
-                    <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditTitleModalClicked><ion-icon name="close-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-success" type="submit" disabled="@(titleStatus is FormStatus.Submitting)"><ion-icon name="checkmark-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-secondary" disabled="@(titleStatus is FormStatus.Submitting)" @onclick=OnCloseModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
 
-                @if (!string.IsNullOrEmpty(ErrorMessage)) {
+                @if (titleStatus is FormStatus.Failed(var errorMessage)) {
                     <div class="alert alert-danger mb-0 mt-3">
-                        <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
+                        <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @errorMessage
                     </div>
                 }
             </div> </div> </div> </div>
         </div>
     }
 
-    @if (IsEditingName) {
+    @if (Modal is EditModal.EditingName(var nameStatus)) {
         <div class="overlay">
             <div class="modal modal-md d-block"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-body">
                 <form class="d-flex gap-2 w-100" @onsubmit=OnSaveNameClicked>
                     <input type="text" class="form-control" placeholder="Enter your name" required pattern="(.|\s)*\S(.|\s)*" @bind-value=Name>
-                    <button class="btn border-0 btn-outline-success" type="submit" disabled="@(IsLoading)"><ion-icon name="checkmark-sharp"></ion-icon></button>
-                    <button class="btn border-0 btn-outline-secondary" disabled="@(IsLoading)" @onclick=OnCloseEditNameModalClicked><ion-icon name="close-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-success" type="submit" disabled="@(nameStatus is FormStatus.Submitting)"><ion-icon name="checkmark-sharp"></ion-icon></button>
+                    <button class="btn border-0 btn-outline-secondary" disabled="@(nameStatus is FormStatus.Submitting)" @onclick=OnCloseModalClicked><ion-icon name="close-sharp"></ion-icon></button>
                 </form>
 
-                @if (!string.IsNullOrEmpty(ErrorMessage)) {
+                @if (nameStatus is FormStatus.Failed(var errorMessage)) {
                     <div class="alert alert-danger mb-0 mt-3">
-                        <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @ErrorMessage
+                        <ion-icon name="alert-circle-sharp" style="margin-bottom: -8px; font-size: 20pt;"></ion-icon> @errorMessage
                     </div>
                 }
             </div> </div> </div> </div>
@@ -57,8 +57,8 @@ else {
         <div class="card m-3 shadow-sm border-0" style="grid-area: header; width: 600px;">
             <div class="card-body p-2">
                 <div class="d-flex gap-2 w-100 justify-content-between">
-                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon fw-bold" disabled="@(IsLoading)" @onclick=OnEditTitleClicked>@_store.Session.Title <ion-icon name="settings-sharp"></ion-icon></button>
-                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon" disabled="@(IsLoading)" @onclick=OnEditNameClicked><ion-icon name="person-sharp"></ion-icon> @_store.Self?.Name</button>
+                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon fw-bold" disabled="@(Modal is not EditModal.None)" @onclick=OnEditTitleClicked>@_store.Session.Title <ion-icon name="settings-sharp"></ion-icon></button>
+                    <button type="button" class="btn btn-outline-light border-0 text-dark hidden-icon" disabled="@(Modal is not EditModal.None)" @onclick=OnEditNameClicked><ion-icon name="person-sharp"></ion-icon> @_store.Self?.Name</button>
                 </div>
             </div>
         </div>
@@ -93,18 +93,17 @@ else {
 
     string Name { get; set; } = string.Empty;
 
-    string? ErrorMessage { get; set; }
+    closed record EditModal {
+        public sealed record None : EditModal;
+        public sealed record EditingTitle(FormStatus Status) : EditModal;
+        public sealed record EditingName(FormStatus Status) : EditModal;
+    }
 
-    bool IsEditingTitle { get; set; }
-
-    bool IsEditingName { get; set; }
-
-    bool IsLoading { get; set; }
+    EditModal Modal { get; set; } = new EditModal.None();
 
     bool IsContentBlurred =>
         _store.Self is null
-        || IsEditingTitle
-        || IsEditingName;
+        || Modal is not EditModal.None;
 
     protected override async Task OnInitializedAsync() {
         _store.Changed += (o, e) => StateHasChanged();
@@ -112,64 +111,43 @@ else {
     }
 
     void OnEditTitleClicked() {
-        ErrorMessage = null;
         Title = _store!.Session!.Title;
-        IsEditingTitle = true;
-        StateHasChanged();
+        Modal = new EditModal.EditingTitle(new FormStatus.Idle());
     }
 
     void OnEditNameClicked() {
-        ErrorMessage = null;
         Name = _store.Self!.Name;
-        IsEditingName = true;
-        StateHasChanged();
+        Modal = new EditModal.EditingName(new FormStatus.Idle());
     }
 
-    void OnCloseEditTitleModalClicked() {
-        ErrorMessage = null;
-        IsEditingTitle = false;
-    }
-
-    void OnCloseEditNameModalClicked() {
-        ErrorMessage = null;
-        IsEditingName = false;
-    }
+    void OnCloseModalClicked() =>
+        Modal = new EditModal.None();
 
     async Task OnSaveTitleClicked() {
         if (!string.IsNullOrWhiteSpace(Title)) {
-            ErrorMessage = null;
-            IsLoading = true;
-            StateHasChanged();
+            Modal = new EditModal.EditingTitle(new FormStatus.Submitting());
 
             try {
                 await _client.UpdateTitleAsync(Title);
+                Modal = new EditModal.None();
             }
             catch {
-                ErrorMessage = "An error occurred while updating the title. Please try again.";
+                Modal = new EditModal.EditingTitle(new FormStatus.Failed("An error occurred while updating the title. Please try again."));
             }
-
-            IsEditingTitle = false;
-            IsLoading = false;
-            StateHasChanged();
         }
     }
 
     async Task OnSaveNameClicked() {
         if (!string.IsNullOrWhiteSpace(Name)) {
-            ErrorMessage = null;
-            IsLoading = true;
-            StateHasChanged();
+            Modal = new EditModal.EditingName(new FormStatus.Submitting());
 
             try {
                 await _client.UpdateNameAsync(Name);
+                Modal = new EditModal.None();
             }
             catch {
-                ErrorMessage = "An error occurred while updating your name. Please try again.";
+                Modal = new EditModal.EditingName(new FormStatus.Failed("An error occurred while updating your name. Please try again."));
             }
-
-            IsEditingName = false;
-            IsLoading = false;
-            StateHasChanged();
         }
     }
 }
